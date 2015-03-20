@@ -1,4 +1,5 @@
 <?xml version="1.0"?>
 <antlib>
 	<typedef name="freeport" classname="org.nfalco.tools.ant.taskdefs.FreePort" />
+	<typedef name="manifestreader" classname="org.nfalco.tools.ant.taskdefs.ManifestReaderTask" />
 </antlib>
