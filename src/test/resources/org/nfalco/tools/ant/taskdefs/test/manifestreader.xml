@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ====================================================================== 
+     21/mar/2015 16:37:52                                                        
+
+     test  project    
+     description
+                   
+     Nikolas Falco                                                                
+     ====================================================================== -->
+<project name="test  project" default="default">
+	<taskdef resource="org/nfalco/tools/ant/tools.xml" classpath="C:\Users\Nikolas Falco\git\tools-ant\target\tools-ant-1.0.1-SNAPSHOT.jar" />
+
+	<!-- ================================= 
+          target: default              
+         ================================= -->
+	<target name="default" description="Run all tests">
+		<antcall target="manifestreader" inheritall="false" />
+		<antcall target="manifestreaderMapAllAttributes" inheritall="false" />
+	</target>
+
+	<!-- ================================= 
+          target: manifestreader
+         ================================= -->
+	<target name="manifestreader" depends="create.manifest" description="Test for manifestreader task">
+		<manifestreader file="${manifest.file}" prefix="mf.">
+			<attribute name="Bundle-SymbolicName" />
+			<section name="Section1">
+				<attribute name="Nested-Attribute" />
+				<attribute name="Other-Nested-Attribute" property="my.own.property" />
+			</section>
+			<section name="Section2">
+				<attribute name="Nested-Attribute"/>
+			</section>
+		</manifestreader>
+
+		<echo message="${mf.Bundle-SymbolicName}" />
+		<echo message="${mf.Section1.Nested-Attribute}" />
+		<echo message="${my.own.property}" />
+		<echo message="${mf.Section2.Nested-Attribute}" />
+	</target>
+
+	<!-- ================================= 
+          target: manifestreaderMapAllAttributes
+         ================================= -->
+	<target name="manifestreaderMapAllAttributes" depends="create.manifest" description="Test for manifestreader task">
+		<manifestreader file="${manifest.file}" prefix="mf.">
+		</manifestreader>
+
+		<echo message="${mf.Bundle-SymbolicName}" />
+		<echo message="${mf.Section1.Other-Nested-Attribute}" />
+		<echo message="${mf.Section2.Nested-Attribute}" />
+	</target>
+
+	<!-- - - - - - - - - - - - - - - - - - 
+          target: create.manifest                      
+         - - - - - - - - - - - - - - - - - -->
+	<target name="create.manifest" description="Create a test MANIFEST.MF">
+		<tempfile property="manifest.file" suffix=".xml" deleteonexit="true" />
+		<manifest file="${manifest.file}">
+			<attribute name="Bundle-Version" value="1.0.0.1" />
+			<attribute name="Bundle-SymbolicName" value="com.example.bundle" />
+			<section name="Section1">
+				<attribute name="Nested-Attribute" value="nested.section1" />
+				<attribute name="Other-Nested-Attribute" value="other.nested.section1" />
+			</section>
+			<section name="Section2">
+				<attribute name="Nested-Attribute" value="nested.section2" />
+			</section>
+		</manifest>
+	</target>
+
+</project>
