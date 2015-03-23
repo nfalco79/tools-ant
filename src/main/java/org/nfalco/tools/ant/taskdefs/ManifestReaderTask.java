@@ -3,6 +3,7 @@ package org.nfalco.tools.ant.taskdefs;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -14,6 +15,8 @@ import org.apache.tools.ant.PropertyHelper;
 import org.apache.tools.ant.Task;
 import org.apache.tools.ant.taskdefs.Manifest;
 import org.apache.tools.ant.taskdefs.ManifestException;
+import org.apache.tools.ant.types.Resource;
+import org.apache.tools.ant.types.ResourceCollection;
 import org.apache.tools.ant.util.FileUtils;
 
 /**
@@ -121,9 +124,14 @@ public class ManifestReaderTask extends Task {
 
 	private Section mainSection = new Section();
 	private Set<Section> sections = new HashSet<Section>();
+	private ResourceCollection resources;
 
 	public void addConfiguredAttribute(Attribute attribute) throws ManifestException {
 		mainSection.addConfiguredAttribute(attribute);
+	}
+
+	public void add(ResourceCollection resources) throws ManifestException {
+		this.resources = resources;
 	}
 
 	/**
@@ -167,7 +175,7 @@ public class ManifestReaderTask extends Task {
 
 	/**
 	 * Set the prefix to load these properties under.
-	 * 
+	 *
 	 * @param prefix
 	 *            to set
 	 */
@@ -206,21 +214,26 @@ public class ManifestReaderTask extends Task {
 	 */
 	@Override
 	public void execute() throws BuildException {
-		if (manifestFile == null) {
-			throw new BuildException("the file attribute is required");
+		if (manifestFile == null && resources == null) {
+			throw new BuildException("the file attribute or nested resource is required");
 		}
-		if (!manifestFile.exists()) {
+		if (manifestFile != null && !manifestFile.exists()) {
 			throw new BuildException("Manifest does not exists: " + manifestFile);
 		}
 
-		FileInputStream fis = null;
+		InputStream is = null;
 		InputStreamReader isr = null;
 		try {
-			fis = new FileInputStream(manifestFile);
-			if (encoding == null) {
-				isr = new InputStreamReader(fis, "UTF-8");
+			if (manifestFile != null) {
+				is = new FileInputStream(manifestFile);
 			} else {
-				isr = new InputStreamReader(fis, encoding);
+				Resource resource = (Resource) resources.iterator().next();
+				is = resource.getInputStream();
+			}
+			if (encoding == null) {
+				isr = new InputStreamReader(is, "UTF-8");
+			} else {
+				isr = new InputStreamReader(is, encoding);
 			}
 			Manifest current = new Manifest(isr);
 
