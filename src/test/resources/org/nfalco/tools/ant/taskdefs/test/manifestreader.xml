@@ -14,14 +14,14 @@
           target: default              
          ================================= -->
 	<target name="default" description="Run all tests">
-		<antcall target="manifestreader" inheritall="false" />
-		<antcall target="manifestreaderMapAllAttributes" inheritall="false" />
+		<antcall target="manifestreader_with_prefix" inheritall="false" />
+		<antcall target="manifestreader_with_default_mapping_and_prefix" inheritall="false" />
 	</target>
 
 	<!-- ================================= 
-          target: manifestreader
+          target: manifestreader_with_prefix
          ================================= -->
-	<target name="manifestreader" depends="create.manifest" description="Test for manifestreader task">
+	<target name="manifestreader_with_prefix" depends="create.manifest" description="Test for manifestreader task">
 		<manifestreader file="${manifest.file}" prefix="mf.">
 			<attribute name="Bundle-SymbolicName" />
 			<section name="Section1">
@@ -40,9 +40,9 @@
 	</target>
 
 	<!-- ================================= 
-          target: manifestreaderMapAllAttributes
+          target: manifestreader_with_default_mapping_and_prefix
          ================================= -->
-	<target name="manifestreaderMapAllAttributes" depends="create.manifest" description="Test for manifestreader task">
+	<target name="manifestreader_with_default_mapping_and_prefix" depends="create.manifest" description="Test for manifestreader task">
 		<manifestreader file="${manifest.file}" prefix="mf.">
 		</manifestreader>
 

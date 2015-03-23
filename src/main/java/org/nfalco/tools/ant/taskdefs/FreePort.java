@@ -91,7 +91,6 @@ public class FreePort extends Task {
 	 *            name of property
 	 * @param v
 	 *            value to set
-	 * @since Ant 1.8
 	 */
 	protected void addProperty(String n, Object v) {
 		PropertyHelper ph = PropertyHelper.getPropertyHelper(getProject());

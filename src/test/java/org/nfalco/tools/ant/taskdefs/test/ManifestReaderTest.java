@@ -1,82 +1,67 @@
 package org.nfalco.tools.ant.taskdefs.test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.Properties;
+import java.io.PrintWriter;
 
-import org.apache.tools.ant.BuildException;
-import org.apache.tools.ant.DefaultLogger;
 import org.apache.tools.ant.Project;
-import org.apache.tools.ant.ProjectHelper;
+import org.apache.tools.ant.taskdefs.Manifest;
+import org.apache.tools.ant.util.FileUtils;
 import org.junit.Test;
+import org.nfalco.tools.ant.taskdefs.ManifestReader;
+import org.nfalco.tools.ant.taskdefs.ManifestReader.Attribute;
+import org.nfalco.tools.ant.taskdefs.ManifestReader.Section;
 
 public class ManifestReaderTest {
 
-	/**
-	 * To execute a target specified in the Ant build.xml file
-	 *
-	 * @param buildFile
-	 *            the full path of the ant file.
-	 * @param target
-	 *            the target to execute.
-	 * @return the executed project.
-	 */
-	public static Project executeAntTask(File buildFile, String target) {
-		if (!buildFile.exists() || !buildFile.isFile()) {
-			throw new RuntimeException(buildFile.getPath() + " does not exists or is not a file");
-		}
-		DefaultLogger consoleLogger = getConsoleLogger();
+	private File createManifest() throws Exception {
+		Manifest mf = new Manifest();
 
-		// Prepare Ant project
-		Project project = new Project();
-		project.setUserProperty("ant.file", buildFile.getAbsolutePath());
-		project.addBuildListener(consoleLogger);
+		mf.addConfiguredAttribute(new org.apache.tools.ant.taskdefs.Manifest.Attribute("Bundle-Version", "1.0.0.1"));
+		mf.addConfiguredAttribute(new org.apache.tools.ant.taskdefs.Manifest.Attribute("Bundle-SymbolicName", "com.example.bundle"));
 
-		// Capture event for Ant script build start / stop / failure
-		try {
-			project.fireBuildStarted();
-			project.init();
-			ProjectHelper projectHelper = ProjectHelper.getProjectHelper();
-			project.addReference("ant.projectHelper", projectHelper);
-			projectHelper.parse(project, buildFile);
+		org.apache.tools.ant.taskdefs.Manifest.Section section1 = new org.apache.tools.ant.taskdefs.Manifest.Section();
+		section1.setName("Section1");
+		section1.addConfiguredAttribute(new org.apache.tools.ant.taskdefs.Manifest.Attribute("Nested-Attribute", "nested.section1"));
+		section1.addConfiguredAttribute(new org.apache.tools.ant.taskdefs.Manifest.Attribute("Other-Nested-Attribute", "other.nested.section1"));
+		mf.addConfiguredSection(section1);
 
-			// If no target specified then default target will be executed.
-			String targetToExecute = (target != null && target.trim().length() > 0) ? target.trim() : project.getDefaultTarget();
-			project.executeTarget(targetToExecute);
-			project.fireBuildFinished(null);
-		} catch (BuildException buildException) {
-			project.fireBuildFinished(buildException);
-			throw buildException;
-		}
+		org.apache.tools.ant.taskdefs.Manifest.Section section2 = new org.apache.tools.ant.taskdefs.Manifest.Section();
+		section2.setName("Section2");
+		section2.addConfiguredAttribute(new org.apache.tools.ant.taskdefs.Manifest.Attribute("Nested-Attribute", "nested.section2"));
+		mf.addConfiguredSection(section2);
 
-		return project;
-	}
+		File mfFile = File.createTempFile("MANIFEST", ".MF");
+		PrintWriter writer = new PrintWriter(mfFile);
+		mf.write(writer);
+		FileUtils.close(writer);
 
-	/**
-	 * Logger to log output generated while executing ant script in console.
-	 *
-	 * @return a configured Ant logger.
-	 */
-	private static DefaultLogger getConsoleLogger() {
-		DefaultLogger consoleLogger = new DefaultLogger();
-		consoleLogger.setErrorPrintStream(System.err);
-		consoleLogger.setOutputPrintStream(System.out);
-		consoleLogger.setMessageOutputLevel(Project.MSG_INFO);
-
-		return consoleLogger;
+		return mfFile;
 	}
 
 	@Test
 	public void manifestreader_with_prefix() throws Exception {
-		URL resource = ManifestReaderTest.class.getResource("manifestreader.xml");
-		assertNotNull("build file not found", resource);
+		File mfFile = createManifest();
 
-		File buildFile = new File(resource.toURI());
-		Project project = executeAntTask(buildFile, "manifestreader");
+		ManifestReader mfReaderTask = new ManifestReader();
+		Project project = AntUtil.createEmptyProject();
+		mfReaderTask.setProject(project);
+
+		mfReaderTask.setFile(mfFile);
+		mfReaderTask.setPrefix("mf.");
+		mfReaderTask.addConfiguredAttribute(new Attribute("Bundle-SymbolicName"));
+
+		Section section1 = new Section("Section1");
+		section1.addConfiguredAttribute(new Attribute("Nested-Attribute"));
+		section1.addConfiguredAttribute(new Attribute("Other-Nested-Attribute", "my.own.property"));
+		mfReaderTask.addConfiguredSection(section1);
+
+		Section section2 = new Section("Section2");
+		section2.addConfiguredAttribute(new Attribute("Nested-Attribute"));
+		mfReaderTask.addConfiguredSection(section2);
+
+		mfReaderTask.execute();
 
 		assertEquals("Wrong value for property mf.Bundle-SymbolicName", "com.example.bundle", project.getProperty("mf.Bundle-SymbolicName"));
 		assertEquals("Wrong value for property mf.Section1.Nested-Attribute", "nested.section1", project.getProperty("mf.Section1.Nested-Attribute"));
@@ -86,15 +71,19 @@ public class ManifestReaderTest {
 
 	@Test
 	public void manifestreader_with_default_mapping_and_prefix() throws Exception {
-		URL resource = ManifestReaderTest.class.getResource("manifestreader.xml");
-		assertNotNull("build file not found", resource);
+		File mfFile = createManifest();
 
-		File buildFile = new File(resource.toURI());
-		Project project = executeAntTask(buildFile, "manifestreaderMapAllAttributes");
+		Project project = AntUtil.createEmptyProject();
+
+		ManifestReader mfReaderTask = new ManifestReader();
+		mfReaderTask.setProject(project);
+		mfReaderTask.setFile(mfFile);
+		mfReaderTask.setPrefix("mf.");
+
+		mfReaderTask.execute();
 
 		assertEquals("Wrong value for property mf.Bundle-SymbolicName", "com.example.bundle", project.getProperty("mf.Bundle-SymbolicName"));
-		assertEquals("Wrong value for property mf.Section1.Other-Nested-Attribute", "other.nested.section1",
-				project.getProperty("mf.Section1.Other-Nested-Attribute"));
+		assertEquals("Wrong value for property mf.Section1.Other-Nested-Attribute", "other.nested.section1", project.getProperty("mf.Section1.Other-Nested-Attribute"));
 		assertEquals("Wrong value for property mf.Section2.Nested-Attribute", "nested.section2", project.getProperty("mf.Section2.Nested-Attribute"));
 	}
 }

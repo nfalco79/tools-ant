@@ -1,12 +1,12 @@
 package org.nfalco.tools.ant.taskdefs;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 
 import org.apache.tools.ant.BuildException;
@@ -17,6 +17,8 @@ import org.apache.tools.ant.taskdefs.Manifest;
 import org.apache.tools.ant.taskdefs.ManifestException;
 import org.apache.tools.ant.types.Resource;
 import org.apache.tools.ant.types.ResourceCollection;
+import org.apache.tools.ant.types.resources.FileResource;
+import org.apache.tools.ant.types.resources.Resources;
 import org.apache.tools.ant.util.FileUtils;
 
 /**
@@ -27,11 +29,11 @@ import org.apache.tools.ant.util.FileUtils;
  * . Specifically, a manifest element consists of a set of attributes and
  * sections. These sections in turn may contain attributes.
  * <p>
- * Each read attribute is mapped to a property composed with the
+ * Each read attribute is mapped to an ant property composed with the
  * <code>&lt;section name&gt;.&lt;attribute name&gt;</code> except for
  * attributes in the main section.
  */
-public class ManifestReaderTask extends Task {
+public class ManifestReader extends Task {
 	/**
 	 * An attribute for the manifest. Those attributes that are not nested into
 	 * a section will be added to the "Main" section.
@@ -40,25 +42,54 @@ public class ManifestReaderTask extends Task {
 		private String name;
 		private String property;
 
+		/**
+		 * Construct an empty attribute.
+		 */
 		public Attribute() {
 		}
 
-		private Attribute(String name) {
+		public Attribute(String name) {
 			this.name = name;
 		}
 
+		public Attribute(String name, String property) {
+			this.name = name;
+			this.property = property;
+		}
+
+		/**
+		 * Get the Attribute's name.
+		 *
+		 * @return the attribute's name.
+		 */
 		public String getName() {
 			return name;
 		}
 
+		/**
+		 * Set the Attribute's name; required.
+		 *
+		 * @param name
+		 *            the attribute's name
+		 */
 		public void setName(String name) {
 			this.name = name;
 		}
 
+		/**
+		 * Get the Ant property's name where is mapped this attribute.
+		 *
+		 * @return the property's name.
+		 */
 		public String getProperty() {
 			return property;
 		}
 
+		/**
+		 * Set the Ant property's name where map this attribute.
+		 *
+		 * @return the property's name.
+		 */
 		public void setProperty(String property) {
 			this.property = property;
 		}
@@ -79,12 +110,12 @@ public class ManifestReaderTask extends Task {
 		/**
 		 * The section's attributes.
 		 */
-		private Set<Attribute> attributes = new HashSet<ManifestReaderTask.Attribute>(3);
+		private Set<Attribute> attributes = new HashSet<ManifestReader.Attribute>(3);
 
 		public Section() {
 		}
 
-		private Section(String name) {
+		public Section(String name) {
 			this.name = name;
 		}
 
@@ -124,14 +155,14 @@ public class ManifestReaderTask extends Task {
 
 	private Section mainSection = new Section();
 	private Set<Section> sections = new HashSet<Section>();
-	private ResourceCollection resources;
+	private Resources resources = new Resources();
 
 	public void addConfiguredAttribute(Attribute attribute) throws ManifestException {
 		mainSection.addConfiguredAttribute(attribute);
 	}
 
 	public void add(ResourceCollection resources) throws ManifestException {
-		this.resources = resources;
+		this.resources.add(resources);
 	}
 
 	/**
@@ -214,42 +245,47 @@ public class ManifestReaderTask extends Task {
 	 */
 	@Override
 	public void execute() throws BuildException {
-		if (manifestFile == null && resources == null) {
-			throw new BuildException("the file attribute or nested resource is required");
+		if (manifestFile == null && resources.size() == 0) {
+			throw new BuildException("the file attribute or a nested resource is required");
 		}
 		if (manifestFile != null && !manifestFile.exists()) {
 			throw new BuildException("Manifest does not exists: " + manifestFile);
 		}
 
+		resources.add(new FileResource(manifestFile));
+		if (resources.size() == 0) {
+			throw new BuildException("nested resource is empty");
+		}
+
 		InputStream is = null;
 		InputStreamReader isr = null;
+		Manifest current = null;
 		try {
-			if (manifestFile != null) {
-				is = new FileInputStream(manifestFile);
-			} else {
-				Resource resource = (Resource) resources.iterator().next();
+			@SuppressWarnings("rawtypes")
+			Iterator resIt = resources.iterator();
+			while (resIt.hasNext()) {
+				Object res = resIt.next();
+				if (!(res instanceof Resource)) {
+					continue;
+				}
+				Resource resource = (Resource) res;
 				is = resource.getInputStream();
+				if (encoding == null) {
+					isr = new InputStreamReader(is, "UTF-8");
+				} else {
+					isr = new InputStreamReader(is, encoding);
+				}
+				if (current == null) {
+					current = new Manifest(isr);
+				} else {
+					current.merge(new Manifest(isr));
+				}
 			}
-			if (encoding == null) {
-				isr = new InputStreamReader(is, "UTF-8");
-			} else {
-				isr = new InputStreamReader(is, encoding);
-			}
-			Manifest current = new Manifest(isr);
 
 			// if no sections was specified all attributes will be read, copy
 			// all attributes from loaded manifest
 			if (sections.isEmpty() && mainSection.attributes.isEmpty()) {
-				copyAttributes(current.getMainSection(), mainSection);
-
-				@SuppressWarnings("rawtypes")
-				Enumeration sectionNames = current.getSectionNames();
-				while (sectionNames.hasMoreElements()) {
-					org.apache.tools.ant.taskdefs.Manifest.Section readSection = current.getSection((String) sectionNames.nextElement());
-					Section section = new Section(readSection.getName());
-					copyAttributes(readSection, section);
-					addConfiguredSection(section);
-				}
+				mapAllAttributes(current);
 			}
 
 			bindAttributes(mainSection, current.getMainSection());
@@ -269,6 +305,19 @@ public class ManifestReaderTask extends Task {
 			FileUtils.close(isr);
 		}
 
+	}
+
+	private void mapAllAttributes(Manifest main) throws ManifestException {
+		copyAttributes(main.getMainSection(), mainSection);
+
+		@SuppressWarnings("rawtypes")
+		Enumeration sectionNames = main.getSectionNames();
+		while (sectionNames.hasMoreElements()) {
+			org.apache.tools.ant.taskdefs.Manifest.Section readSection = main.getSection((String) sectionNames.nextElement());
+			Section section = new Section(readSection.getName());
+			copyAttributes(readSection, section);
+			addConfiguredSection(section);
+		}
 	}
 
 	private void copyAttributes(Manifest.Section sourceSection, Section destSection) {
