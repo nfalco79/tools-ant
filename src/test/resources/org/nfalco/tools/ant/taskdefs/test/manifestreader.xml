@@ -8,7 +8,7 @@
      Nikolas Falco                                                                
      ====================================================================== -->
 <project name="test  project" default="default">
-	<taskdef resource="org/nfalco/tools/ant/tools.xml" classpath="C:\Users\Nikolas Falco\git\tools-ant\target\tools-ant-1.0.1-SNAPSHOT.jar" />
+	<taskdef resource="org/nfalco/tools/ant/tools.xml" />
 
 	<!-- ================================= 
           target: default              
@@ -68,5 +68,14 @@
 			</section>
 		</manifest>
 	</target>
+
+	<!-- - - - - - - - - - - - - - - - - - 
+          target: esa
+         - - - - - - - - - - - - - - - - - -->
+    <target name="esa">
+		<esa destfile="D:\git\tools-ant\pippo.esa">
+			<fileset dir="D:\git\platform.server\builder\tmp\LoggingFeature2052732729" includes="*.jar"/>
+		</esa>
+    </target>
 
 </project>
