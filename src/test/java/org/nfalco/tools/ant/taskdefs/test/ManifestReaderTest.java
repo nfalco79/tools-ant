@@ -1,6 +1,6 @@
 package org.nfalco.tools.ant.taskdefs.test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.PrintWriter;
@@ -33,6 +33,7 @@ public class ManifestReaderTest {
 		mf.addConfiguredSection(section2);
 
 		File mfFile = File.createTempFile("MANIFEST", ".MF");
+		mfFile.deleteOnExit();
 		PrintWriter writer = new PrintWriter(mfFile);
 		mf.write(writer);
 		FileUtils.close(writer);

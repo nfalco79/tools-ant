@@ -39,9 +39,9 @@
 		<echo message="${mf.Section2.Nested-Attribute}" />
 	</target>
 
-	<!-- ================================= 
+	<!-- - - - - - - - - - - - - - - - - - 
           target: manifestreader_with_default_mapping_and_prefix
-         ================================= -->
+         - - - - - - - - - - - - - - - - - -->
 	<target name="manifestreader_with_default_mapping_and_prefix" depends="create.manifest" description="Test for manifestreader task">
 		<manifestreader file="${manifest.file}" prefix="mf.">
 		</manifestreader>
@@ -68,14 +68,5 @@
 			</section>
 		</manifest>
 	</target>
-
-	<!-- - - - - - - - - - - - - - - - - - 
-          target: esa
-         - - - - - - - - - - - - - - - - - -->
-    <target name="esa">
-		<esa destfile="D:\git\tools-ant\pippo.esa">
-			<fileset dir="D:\git\platform.server\builder\tmp\LoggingFeature2052732729" includes="*.jar"/>
-		</esa>
-    </target>
 
 </project>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ====================================================================== 
+     21/mar/2015 16:37:52                                                        
+
+     test  project    
+     description
+                   
+     Nikolas Falco                                                                
+     ====================================================================== -->
+<project name="test  project" default="default">
+	<taskdef resource="org/nfalco/tools/ant/tools.xml" />
+
+	<!-- ================================= 
+          target: default              
+         ================================= -->
+	<target name="default" description="Run all tests">
+		<antcall target="esa" inheritall="false" />
+	</target>
+
+
+	<!-- - - - - - - - - - - - - - - - - - 
+          target: esa
+         - - - - - - - - - - - - - - - - - -->
+	<target name="esa">
+		<tempfile property="esa.file" destdir="/Users/nikolasfalco/git/tools-ant/src/test/resources" suffix=".esa" />
+		<esa destfile="${esa.file}" symbolicname="org.nfalco.example" version="1.0.0.1">
+			<zipfileset src="/Users/nikolasfalco/git/tools-ant/src/test/resources/osgi-over-slf4j-1.7.10.jar" includes="*.class" />
+		</esa>
+		<zip destfile="${esa.file}.zip">
+			<zipfileset src="/Users/nikolasfalco/git/tools-ant/src/test/resources/osgi-over-slf4j-1.7.10.jar" includes="*.class" />
+		</zip>
+	</target>
+</project>

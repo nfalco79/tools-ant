@@ -4,13 +4,14 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.io.StringReader;
+import java.io.Reader;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,7 +27,9 @@ import org.apache.tools.ant.taskdefs.ManifestException;
 import org.apache.tools.ant.taskdefs.Zip;
 import org.apache.tools.ant.types.EnumeratedAttribute;
 import org.apache.tools.ant.types.Resource;
+import org.apache.tools.ant.types.ResourceCollection;
 import org.apache.tools.ant.types.ZipFileSet;
+import org.apache.tools.ant.types.resources.FileResource;
 import org.apache.tools.ant.util.FileUtils;
 import org.apache.tools.zip.JarMarker;
 import org.apache.tools.zip.ZipExtraField;
@@ -52,8 +55,8 @@ public class Esa extends Zip {
 	private Map<String, ContentInfo> contentMap = new HashMap<String, Esa.ContentInfo>();
 
 	/**
-	 * EnumeratedAttribute covering the file types to be checked for, either
-	 * file or dir.
+	 * EnumeratedAttribute covering the visibility types to be checked for,
+	 * either public, protected or private.
 	 */
 	public static class Visibility extends EnumeratedAttribute {
 
@@ -77,7 +80,8 @@ public class Esa extends Zip {
 		/**
 		 * Construct a new Comparison with the specified value.
 		 *
-		 * @param value the EnumeratedAttribute value.
+		 * @param value
+		 *            the EnumeratedAttribute value.
 		 */
 		public Visibility(String value) {
 			setValue(value);
@@ -93,27 +97,27 @@ public class Esa extends Zip {
 		}
 
 		/**
-		 * Indicate if the value specifies a directory.
+		 * Indicate if the visibility is public.
 		 *
-		 * @return true if the value specifies a directory.
+		 * @return true if the visibility specified is public.
 		 */
 		public boolean isPublic() {
 			return "public".equalsIgnoreCase(getValue());
 		}
 
 		/**
-		 * Indicate if the value specifies a file.
+		 * Indicate if the visibility is protected.
 		 *
-		 * @return true if the value specifies a file.
+		 * @return true if the visibility specified is protected.
 		 */
 		public boolean isProtected() {
 			return "protected".equalsIgnoreCase(getValue());
 		}
 
 		/**
-		 * Indicate if the value specifies a file.
+		 * Indicate if the visibility is private.
 		 *
-		 * @return true if the value specifies a file.
+		 * @return true if the visibility specified is private.
 		 */
 		public boolean isPrivate() {
 			return "private".equalsIgnoreCase(getValue());
@@ -122,79 +126,104 @@ public class Esa extends Zip {
 	}
 
 	private class ContentInfo {
+		protected String name;
 		protected ContentType type;
 	}
 
 	private class BundleInfo extends ContentInfo {
-		private String bundleSymbolicName;
-		private String bundleVersion;
-		private Collection<String> exportPackage;
-		private Collection<String> importPackage;
+		private String version;
+		private String[] exportPackage;
 	}
 
 	private enum ContentType {
 		bundle, feature, jar, file
 	}
 
-	static byte[] collect(InputStream in) throws IOException {
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		copy(in, out);
-		return out.toByteArray();
+	private static String join(Collection<String> list, String conjunction) {
+		StringBuilder sb = new StringBuilder();
+		boolean first = true;
+		for (String item : list) {
+			if (first) {
+				first = false;
+			} else {
+				sb.append(conjunction);
+			}
+			sb.append(item);
+		}
+		return sb.toString();
 	}
 
-	static void copy(InputStream in, OutputStream out) throws IOException {
-		int available = in.available();
-		if (available <= 10000)
-			available = 64000;
-		byte[] buffer = new byte[available];
-		int size;
-		while ((size = in.read(buffer)) > 0) {
-			out.write(buffer, 0, size);
-		}
+	private static boolean isBlank(String value) {
+		return value == null || "".equals(value.trim());
 	}
 
 	@Override
-	protected void zipFile(InputStream in, ZipOutputStream zOut, String vPath, long lastModified, File fromArchive, int mode) throws IOException {
+	protected ArchiveState getResourcesToAdd(ResourceCollection[] rcs, File zipFile, boolean needsUpdate) throws BuildException {
+		return super.getResourcesToAdd(rcs, zipFile, needsUpdate);
+	}
+
+	@Override
+	public void add(ResourceCollection rc) {
+		// TODO parseManifest here
+		super.add(rc);
+	}
+
+	@Override
+	protected void zipFile(File file, ZipOutputStream zOut, String vPath, int mode) throws IOException {
+		parseManifest(vPath, new FileResource(file));
+		super.zipFile(file, zOut, vPath, mode);
+	}
+
+	private void parseManifest(String vPath, Resource resource) throws IOException {
 		ContentInfo contentInfo = new ContentInfo();
+
+		contentInfo.name = new File(vPath).getName();
+		if (contentInfo.name.lastIndexOf('.') != -1) {
+			// remove extension from file
+			contentInfo.name = contentInfo.name.substring(0, contentInfo.name.lastIndexOf('.'));
+		}
+
 		if (vPath.endsWith(".jar")) {
 			contentInfo.type = ContentType.jar;
 
-			ZipInputStream zip = new ZipInputStream(in);
-			ZipEntry zipEntry;
-			while ((zipEntry = zip.getNextEntry()) != null) {
-				if (!zipEntry.isDirectory() && MANIFEST_NAME.equals(zipEntry.getName())) {
-					byte data[] = collect(zip);
-					StringReader reader = new StringReader(new String(data));
-					Manifest manifest;
-					try {
-						manifest = new Manifest(reader);
-					} catch (ManifestException e) {
-						log("Manifest is invalid: " + e.getMessage(), Project.MSG_ERR);
-						throw new BuildException("Invalid Manifest", e, getLocation());
-					} finally {
-						reader.close();
+			ZipInputStream zip = null;
+			try {
+				zip = new ZipInputStream(resource.getInputStream());
+				ZipEntry zipEntry;
+				while ((zipEntry = zip.getNextEntry()) != null) {
+					if (!zipEntry.isDirectory() && MANIFEST_NAME.equals(zipEntry.getName())) {
+						Reader reader = new InputStreamReader(zip);
+						Manifest manifest;
+						try {
+							manifest = new Manifest(reader);
+						} catch (ManifestException e) {
+							log("Manifest is invalid: " + e.getMessage(), Project.MSG_ERR);
+							throw new BuildException("Invalid Manifest", e, getLocation());
+						} finally {
+							reader.close();
+						}
+						String manifestVersion = manifest.getMainSection().getAttributeValue("Bundle-ManifestVersion");
+						if (!isBlank(manifestVersion) && Integer.valueOf(manifestVersion) >= 2) {
+							BundleInfo bundleInfo = new BundleInfo();
+							bundleInfo.type = ContentType.bundle;
+							bundleInfo.name = manifest.getMainSection().getAttributeValue("Bundle-SymbolicName");
+							bundleInfo.version = manifest.getMainSection().getAttributeValue("Bundle-Version");
+							Attribute exportPackage = manifest.getMainSection().getAttribute("Export-Package");
+							bundleInfo.exportPackage = exportPackage.getValue().split(",\\s+");
+							contentInfo = bundleInfo;
+						}
+						break;
 					}
-					String manifestVersion = manifest.getMainSection().getAttributeValue("Bundle-ManifestVersion");
-					if (manifestVersion != null && Integer.valueOf(manifestVersion) >= 2) {
-						BundleInfo bundleInfo = new BundleInfo();
-						bundleInfo.type = ContentType.bundle;
-						bundleInfo.bundleSymbolicName = manifest.getMainSection().getAttributeValue("Bundle-SymbolicName");
-						bundleInfo.bundleVersion = manifest.getMainSection().getAttributeValue("Bundle-Version");
-						Attribute exportPackage = manifest.getMainSection().getAttribute("Export-Package");
-						bundleInfo.importPackage = Collections.list(exportPackage.getValues());
-						Attribute importPackage = manifest.getMainSection().getAttribute("Import-Package");
-						bundleInfo.exportPackage = Collections.list(importPackage.getValues());
-						contentInfo = bundleInfo;
-					}
-					break;
+				}
+			} finally {
+				if (zip != null) {
+					FileUtils.close(zip);
 				}
 			}
-		}
-		else {
+		} else {
 			contentInfo.type = ContentType.file;
 		}
 		contentMap.put(vPath, contentInfo);
-		super.zipFile(in, zOut, vPath, lastModified, fromArchive, mode);
 	}
 
 	@Override
@@ -207,7 +236,8 @@ public class Esa extends Zip {
 	}
 
 	private void writeManifest(ZipOutputStream zOut, Manifest manifest) throws IOException {
-		for (Enumeration e = manifest.getWarnings(); e.hasMoreElements();) {
+		for (@SuppressWarnings("unchecked")
+		Enumeration<String> e = manifest.getWarnings(); e.hasMoreElements();) {
 			log("Manifest warning: " + e.nextElement(), Project.MSG_WARN);
 		}
 
@@ -235,15 +265,18 @@ public class Esa extends Zip {
 		Manifest manifest = Manifest.getDefaultManifest();
 		try {
 			manifest.addConfiguredAttribute(new Attribute("IBM-Feature-Version", "2"));
-			if (name != null && !"".equals(name)) {
+			if (!isBlank(name)) {
 				manifest.addConfiguredAttribute(new Attribute("IBM-ShortName", name));
 				manifest.addConfiguredAttribute(new Attribute("Subsystem-Name", name));
 			}
-			if (version != null && !"".equals(version)) {
+			if (!isBlank(version)) {
 				manifest.addConfiguredAttribute(new Attribute("Subsystem-Version", version));
 			}
+			if (!isBlank(license)) {
+				manifest.addConfiguredAttribute(new Attribute("Subsystem-License", license));
+			}
 			manifest.addConfiguredAttribute(new Attribute("Subsystem-ManifestVersion", "1"));
-			manifest.addConfiguredAttribute(new Attribute("Subsystem-License", getLicense()));
+
 			StringBuilder symbolicName = new StringBuilder();
 			symbolicName.append(this.symbolicName);
 			if (!visibility.isPrivate()) {
@@ -255,40 +288,31 @@ public class Esa extends Zip {
 			manifest.addConfiguredAttribute(new Attribute("Subsystem-SymbolicName", symbolicName.toString()));
 
 			if (!contentMap.isEmpty()) {
-				Attribute api = new Attribute();
-				api.setName("IBM-API-Package");
-				for (Entry<String, ContentInfo> entry : contentMap.entrySet()) {
-					switch (entry.getValue().type) {
-					case bundle:
-						BundleInfo bundleInfo = (BundleInfo) entry.getValue();
-						for (String pkg : bundleInfo.exportPackage) {
-							api.addContinuation(pkg);
-						}
-						break;
-					default:
-						break;
+				Collection<String> exportPackages = new ArrayList<String>();
+				for (ContentInfo contentInfo : contentMap.values()) {
+					if (contentInfo.type == ContentType.bundle) {
+						BundleInfo bundleInfo = (BundleInfo) contentInfo;
+						exportPackages.addAll(Arrays.asList(bundleInfo.exportPackage));
 					}
 				}
-				manifest.addConfiguredAttribute(api);
+				if (!exportPackages.isEmpty()) {
+					manifest.addConfiguredAttribute(new Attribute("IBM-API-Package", join(exportPackages, ", ")));
+				}
 
-				Attribute content = new Attribute();
-				content.setName("Subsystem-Content");
+				Collection<String> content = new ArrayList<String>(contentMap.size());
 				for (Entry<String, ContentInfo> entry : contentMap.entrySet()) {
-					StringBuilder sb = new StringBuilder();
-					switch (entry.getValue().type) {
+					ContentInfo contentInfo = entry.getValue();
+					switch (contentInfo.type) {
 					case bundle:
-						BundleInfo bundleInfo = (BundleInfo) entry.getValue();
-						sb.append(bundleInfo.bundleSymbolicName);
-						sb.append("; version=\"").append(bundleInfo.bundleVersion).append('"');
-						content.addValue(sb.toString());
+						BundleInfo bundleInfo = (BundleInfo) contentInfo;
+						content.add(MessageFormat.format("{0}; version=\"{1}\"", bundleInfo.name, bundleInfo.version));
 						break;
 					default:
-						sb.append("type=\"").append(entry.getValue().type.name()).append('"');
-						content.addValue(sb.toString());
+						content.add(MessageFormat.format("{0}; type=\"{1}\"", contentInfo.name, contentInfo.type.name()));
 						break;
 					}
 				}
-				manifest.addConfiguredAttribute(content);
+				manifest.addConfiguredAttribute(new Attribute("Subsystem-Content", join(content, ", ")));
 			}
 		} catch (ManifestException e) {
 			log("Manifest is invalid: " + e.getMessage(), Project.MSG_ERR);
@@ -301,29 +325,27 @@ public class Esa extends Zip {
 	public Esa() {
 		super();
 		archiveType = "esa";
-		emptyBehavior = "create";
 		setEncoding("UTF8");
 	}
 
-	public String getName() {
-		return name;
+	@Override
+	public void execute() throws BuildException {
+		if (symbolicName == null) {
+			throw new BuildException("You must specify a symbolic name");
+		}
+		if (version == null) {
+			throw new BuildException("You must specify a version");
+		}
+		super.execute();
 	}
 
 	public void setName(String name) {
 		this.name = name;
 	}
 
-	public String getVersion() {
-		return version;
-	}
-
 	public void setVersion(String version) {
 		// check version format
 		this.version = version;
-	}
-
-	public String getSymbolicName() {
-		return symbolicName;
 	}
 
 	public void setSymbolicName(String symbolicName) {
@@ -338,16 +360,8 @@ public class Esa extends Zip {
 		this.visibility = visibility;
 	}
 
-	public boolean isSingleton() {
-		return singleton;
-	}
-
 	public void setSingleton(boolean singleton) {
 		this.singleton = singleton;
-	}
-
-	public String getLicense() {
-		return license;
 	}
 
 	public void setLicense(String license) {
