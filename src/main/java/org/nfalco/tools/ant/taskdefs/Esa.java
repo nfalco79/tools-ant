@@ -1,5 +1,8 @@
 package org.nfalco.tools.ant.taskdefs;
 
+import static org.nfalco.tools.ant.taskdefs.SubsystemConstants.*;
+import static org.nfalco.tools.ant.taskdefs.IBMSubsystemConstants.*;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -264,18 +267,18 @@ public class Esa extends Zip {
 	protected Manifest createManifest() throws BuildException {
 		Manifest manifest = Manifest.getDefaultManifest();
 		try {
-			manifest.addConfiguredAttribute(new Attribute("IBM-Feature-Version", "2"));
+			manifest.addConfiguredAttribute(new Attribute(IBM_FEATURE_VERSION, "2"));
 			if (!isBlank(name)) {
-				manifest.addConfiguredAttribute(new Attribute("IBM-ShortName", name));
-				manifest.addConfiguredAttribute(new Attribute("Subsystem-Name", name));
+				manifest.addConfiguredAttribute(new Attribute(IBM_SHORT_NAME, name));
+				manifest.addConfiguredAttribute(new Attribute(SUBSYSTEM_NAME, name));
 			}
 			if (!isBlank(version)) {
-				manifest.addConfiguredAttribute(new Attribute("Subsystem-Version", version));
+				manifest.addConfiguredAttribute(new Attribute(SUBSYSTEM_VERSION, version));
 			}
 			if (!isBlank(license)) {
-				manifest.addConfiguredAttribute(new Attribute("Subsystem-License", license));
+				manifest.addConfiguredAttribute(new Attribute(SUBSYSTEM_LICENSE, license));
 			}
-			manifest.addConfiguredAttribute(new Attribute("Subsystem-ManifestVersion", "1"));
+			manifest.addConfiguredAttribute(new Attribute(SUBSYSTEM_MANIFEST_VERSION, "1"));
 
 			StringBuilder symbolicName = new StringBuilder();
 			symbolicName.append(this.symbolicName);
@@ -285,7 +288,7 @@ public class Esa extends Zip {
 			if (singleton) {
 				symbolicName.append("; singleton:=").append(singleton);
 			}
-			manifest.addConfiguredAttribute(new Attribute("Subsystem-SymbolicName", symbolicName.toString()));
+			manifest.addConfiguredAttribute(new Attribute(SUBSYSTEM_SYMBOLIC_NAME, symbolicName.toString()));
 
 			if (!contentMap.isEmpty()) {
 				Collection<String> exportPackages = new ArrayList<String>();
@@ -296,7 +299,7 @@ public class Esa extends Zip {
 					}
 				}
 				if (!exportPackages.isEmpty()) {
-					manifest.addConfiguredAttribute(new Attribute("IBM-API-Package", join(exportPackages, ", ")));
+					manifest.addConfiguredAttribute(new Attribute(IBM_API_PACKAGE, join(exportPackages, ", ")));
 				}
 
 				Collection<String> content = new ArrayList<String>(contentMap.size());
@@ -312,7 +315,7 @@ public class Esa extends Zip {
 						break;
 					}
 				}
-				manifest.addConfiguredAttribute(new Attribute("Subsystem-Content", join(content, ", ")));
+				manifest.addConfiguredAttribute(new Attribute(SUBSYSTEM_CONTENT, join(content, ", ")));
 			}
 		} catch (ManifestException e) {
 			log("Manifest is invalid: " + e.getMessage(), Project.MSG_ERR);
