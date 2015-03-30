@@ -14,7 +14,8 @@ import org.jdom2.Document;
 import org.jdom2.Element;
 import org.jdom2.input.SAXBuilder;
 import org.junit.Test;
-import org.nfalco.tools.ant.taskdefs.Esa;
+import org.nfalco.tools.ant.taskdefs.EBA;
+import org.nfalco.tools.ant.taskdefs.ESA;
 import org.nfalco.tools.ant.taskdefs.FreePort;
 import org.nfalco.tools.ant.taskdefs.ManifestReader;
 
@@ -62,7 +63,7 @@ public class DescriptorTest {
 			}
 		}
 		
-		assertEquals(3,  taskDefs.size());
+		assertEquals(4,  taskDefs.size());
 		
 		assertTrue("Missing task definition freeport", taskDekMap.containsKey("freeport"));
 		assertEquals(FreePort.class.getName(), (String) taskDekMap.get("freeport"));
@@ -71,6 +72,9 @@ public class DescriptorTest {
 		assertEquals(ManifestReader.class.getName(), (String) taskDekMap.get("manifestreader"));
 
 		assertTrue("Missing task definition esa", taskDekMap.containsKey("esa"));
-		assertEquals(Esa.class.getName(), (String) taskDekMap.get("esa"));
+		assertEquals(ESA.class.getName(), (String) taskDekMap.get("esa"));
+
+		assertTrue("Missing task definition eba", taskDekMap.containsKey("eba"));
+		assertEquals(EBA.class.getName(), (String) taskDekMap.get("eba"));
 	}
 }

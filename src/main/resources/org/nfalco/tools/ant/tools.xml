@@ -2,5 +2,6 @@
 <antlib>
 	<typedef name="freeport" classname="org.nfalco.tools.ant.taskdefs.FreePort" />
 	<typedef name="manifestreader" classname="org.nfalco.tools.ant.taskdefs.ManifestReader" />
-	<typedef name="esa" classname="org.nfalco.tools.ant.taskdefs.Esa" />
+	<typedef name="esa" classname="org.nfalco.tools.ant.taskdefs.ESA" />
+	<typedef name="eba" classname="org.nfalco.tools.ant.taskdefs.EBA" />
 </antlib>

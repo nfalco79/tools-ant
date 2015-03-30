@@ -15,15 +15,17 @@ import org.apache.tools.ant.taskdefs.Manifest.Attribute;
 import org.apache.tools.ant.taskdefs.ManifestException;
 import org.apache.tools.ant.types.FileSet;
 import org.apache.tools.ant.types.Resource;
+import org.nfalco.tools.ant.taskdefs.BundleInfo.ContentType;
+import org.nfalco.tools.ant.taskdefs.util.StringUtils;
 
-public class EBA extends Esa {
+public class EBA extends ESA {
 	/** The application file name. */
 	private static final String APPLICATION_NAME = "META-INF/APPLICATION.MF";
 
 	private FileSet content;
 	private Collection<BundleInfo> wab = new ArrayList<BundleInfo>();
 
-	public void addContent(FileSet fileSet) {
+	public void addExtraFileSet(FileSet fileSet) {
 		this.content = fileSet;
 	}
 
@@ -48,29 +50,26 @@ public class EBA extends Esa {
 				while (it.hasNext()) {
 					Resource resource = it.next();
 					try {
-						ContentInfo contentInfo = parseManifest(resource);
-						if (contentInfo.getType() == ContentType.bundle) {
-							BundleInfo bundleInfo = (BundleInfo) contentInfo;
-							if (bundleInfo.getContext() != null) {
-								wab.add(bundleInfo);
-							}
+						BundleInfo bundleInfo = parseManifest(resource);
+						if (bundleInfo.getType() == ContentType.bundle && bundleInfo.getContext() != null) {
+							wab.add(bundleInfo);
 						}
 					} catch (IOException e) {
 						log("Could not parse resource " + resource.getName(), Project.MSG_WARN);
 					}
 				}
 
-				Collection<ContentInfo> content = new ArrayList<ContentInfo>(bundles);
-				content.addAll(wab);
-				if (!content.isEmpty()) {
+				Collection<BundleInfo> applicationContent = new ArrayList<BundleInfo>(bundles);
+				applicationContent.addAll(wab);
+
+				if (!applicationContent.isEmpty()) {
 					Collection<String> bundles = new ArrayList<String>();
-					for (ContentInfo contentInfo : content) {
-						if (contentInfo.type == ContentType.bundle) {
-							BundleInfo bundleInfo = (BundleInfo) contentInfo;
-							MessageFormat.format("{0};version=\"{1}\"", bundleInfo.getName(), bundleInfo.getVersion());
+					for (BundleInfo bundleInfo : applicationContent) {
+						if (bundleInfo.getType() == ContentType.bundle) {
+							bundles.add(MessageFormat.format("{0};version=\"{1}\"", bundleInfo.getName(), bundleInfo.getVersion()));
 						}
 					}
-					manifest.addConfiguredAttribute(new Attribute(APPLICATION_CONTENT, join(bundles, ", ")));
+					manifest.addConfiguredAttribute(new Attribute(APPLICATION_CONTENT, StringUtils.join(bundles, ", ")));
 				}
 			}
 		} catch (ManifestException e) {
@@ -79,5 +78,10 @@ public class EBA extends Esa {
 		}
 
 		return manifest;
+	}
+
+	public EBA() {
+		super();
+		archiveType = "eba";
 	}
 }

@@ -35,8 +35,10 @@ import org.apache.tools.ant.util.FileUtils;
 import org.apache.tools.zip.JarMarker;
 import org.apache.tools.zip.ZipExtraField;
 import org.apache.tools.zip.ZipOutputStream;
+import org.nfalco.tools.ant.taskdefs.BundleInfo.ContentType;
+import org.nfalco.tools.ant.taskdefs.util.StringUtils;
 
-public class Esa extends Zip {
+public class ESA extends Zip {
 
 	/** The manifest file name. */
 	private static final String MANIFEST_NAME = "META-INF/MANIFEST.MF";
@@ -53,7 +55,7 @@ public class Esa extends Zip {
 	private String license;
 	private Visibility visibility = Visibility.PRIVATE;
 	private boolean singleton;
-	protected Collection<ContentInfo> bundles = new ArrayList<ContentInfo>();
+	protected Collection<BundleInfo> bundles = new ArrayList<BundleInfo>();
 
 	/**
 	 * EnumeratedAttribute covering the visibility types to be checked for,
@@ -126,59 +128,6 @@ public class Esa extends Zip {
 
 	}
 
-	class ContentInfo {
-		protected String name;
-		protected ContentType type;
-
-		public String getName() {
-			return name;
-		}
-
-		public ContentType getType() {
-			return type;
-		}
-	}
-
-	class BundleInfo extends ContentInfo {
-		private String version;
-		private String[] exportPackage;
-		private String context;
-
-		public String getVersion() {
-			return version;
-		}
-
-		public String[] getExportPackage() {
-			return exportPackage;
-		}
-
-		public String getContext() {
-			return context;
-		}
-	}
-
-	enum ContentType {
-		bundle, feature, jar, file
-	}
-
-	protected static String join(Collection<String> list, String conjunction) {
-		StringBuilder sb = new StringBuilder();
-		boolean first = true;
-		for (String item : list) {
-			if (first) {
-				first = false;
-			} else {
-				sb.append(conjunction);
-			}
-			sb.append(item);
-		}
-		return sb.toString();
-	}
-
-	private static boolean isBlank(String value) {
-		return value == null || "".equals(value.trim());
-	}
-
 	@Override
 	protected ArchiveState getResourcesToAdd(ResourceCollection[] rcs, File zipFile, boolean needsUpdate) throws BuildException {
 		for (ResourceCollection rc : rcs) {
@@ -194,17 +143,16 @@ public class Esa extends Zip {
 		return super.getResourcesToAdd(rcs, zipFile, needsUpdate);
 	}
 
-	protected ContentInfo parseManifest(Resource resource) throws IOException {
-		ContentInfo contentInfo = new ContentInfo();
+	protected BundleInfo parseManifest(Resource resource) throws IOException {
+		BundleInfo BundleInfo = new BundleInfo();
 
-		contentInfo.name = new File(resource.getName()).getName();
-		if (contentInfo.getName().lastIndexOf('.') != -1) {
-			// remove extension from file
-			contentInfo.name = contentInfo.getName().substring(0, contentInfo.getName().lastIndexOf('.'));
-		}
-
-		if (contentInfo.getName().endsWith(".jar")) {
-			contentInfo.type = ContentType.jar;
+		BundleInfo.setName(new File(resource.getName()).getName());
+		if (BundleInfo.getName().endsWith(".jar")) {
+			BundleInfo.setType(ContentType.jar);
+			if (BundleInfo.getName().lastIndexOf('.') != -1) {
+				// remove extension from file
+				BundleInfo.setName(BundleInfo.getName().substring(0, BundleInfo.getName().lastIndexOf('.')));
+			}
 
 			ZipInputStream zip = null;
 			try {
@@ -223,17 +171,17 @@ public class Esa extends Zip {
 							reader.close();
 						}
 						String manifestVersion = manifest.getMainSection().getAttributeValue(BUNDLE_MANIFEST_VERSION);
-						if (!isBlank(manifestVersion) && Integer.valueOf(manifestVersion) >= 2) {
+						if (!StringUtils.isBlank(manifestVersion) && Integer.valueOf(manifestVersion) >= 2) {
 							BundleInfo bundleInfo = new BundleInfo();
-							bundleInfo.type = ContentType.bundle;
-							bundleInfo.name = manifest.getMainSection().getAttributeValue(BUNDLE_SYMBOLIC_NAME);
-							bundleInfo.version = manifest.getMainSection().getAttributeValue(BUNDLE_VERSION);
-							bundleInfo.context = manifest.getMainSection().getAttributeValue(BUNDLE_CONTEXT_PATH);
+							bundleInfo.setType(ContentType.bundle);
+							bundleInfo.setName(manifest.getMainSection().getAttributeValue(BUNDLE_SYMBOLIC_NAME));
+							bundleInfo.setVersion(manifest.getMainSection().getAttributeValue(BUNDLE_VERSION));
+							bundleInfo.setContext(manifest.getMainSection().getAttributeValue(BUNDLE_CONTEXT_PATH));
 							Attribute exportPackage = manifest.getMainSection().getAttribute(BUNDLE_EXPORT_PACKAGE);
 							if (exportPackage != null) {
-								bundleInfo.exportPackage = exportPackage.getValue().split(",\\s+");
+								bundleInfo.setExportPackage(exportPackage.getValue().split(",\\s+"));
 							}
-							contentInfo = bundleInfo;
+							BundleInfo = bundleInfo;
 						}
 						break;
 					}
@@ -244,16 +192,15 @@ public class Esa extends Zip {
 				}
 			}
 		} else {
-			contentInfo.type = ContentType.file;
+			BundleInfo.setType(ContentType.file);
 		}
-		return contentInfo;
+		return BundleInfo;
 	}
 
 	@Override
 	protected void finalizeZipOutputStream(ZipOutputStream zOut) throws IOException, BuildException {
 		if (!skipWriting) {
-			Manifest esaManifest = createManifest();
-			writeManifest(zOut, esaManifest);
+			writeManifest(zOut, createManifest());
 		}
 		super.finalizeZipOutputStream(zOut);
 	}
@@ -292,14 +239,14 @@ public class Esa extends Zip {
 		Manifest manifest = Manifest.getDefaultManifest();
 		try {
 			manifest.addConfiguredAttribute(new Attribute(IBM_FEATURE_VERSION, "2"));
-			if (!isBlank(name)) {
+			if (!StringUtils.isBlank(name)) {
 				manifest.addConfiguredAttribute(new Attribute(IBM_SHORT_NAME, name));
 				manifest.addConfiguredAttribute(new Attribute(SUBSYSTEM_NAME, name));
 			}
-			if (!isBlank(version)) {
+			if (!StringUtils.isBlank(version)) {
 				manifest.addConfiguredAttribute(new Attribute(SUBSYSTEM_VERSION, version));
 			}
-			if (!isBlank(license)) {
+			if (!StringUtils.isBlank(license)) {
 				manifest.addConfiguredAttribute(new Attribute(SUBSYSTEM_LICENSE, license));
 			}
 			manifest.addConfiguredAttribute(new Attribute(SUBSYSTEM_MANIFEST_VERSION, "1"));
@@ -316,9 +263,9 @@ public class Esa extends Zip {
 
 			if (!bundles.isEmpty()) {
 				Collection<String> exportPackages = new ArrayList<String>();
-				for (ContentInfo contentInfo : bundles) {
-					if (contentInfo.type == ContentType.bundle && ((BundleInfo) contentInfo).getExportPackage() != null) {
-						BundleInfo bundleInfo = (BundleInfo) contentInfo;
+				for (BundleInfo BundleInfo : bundles) {
+					if (BundleInfo.getType() == ContentType.bundle && BundleInfo.getExportPackage() != null) {
+						BundleInfo bundleInfo = (BundleInfo) BundleInfo;
 						for (int i = 0; i < bundleInfo.getExportPackage().length; i++) {
 							if (bundleInfo.getExportPackage()[i].startsWith("javax.")) {
 								bundleInfo.getExportPackage()[i] += ";type=\"spec\"";
@@ -328,22 +275,22 @@ public class Esa extends Zip {
 					}
 				}
 				if (!exportPackages.isEmpty()) {
-					manifest.addConfiguredAttribute(new Attribute(IBM_API_PACKAGE, join(exportPackages, ", ")));
+					manifest.addConfiguredAttribute(new Attribute(IBM_API_PACKAGE, StringUtils.join(exportPackages, ", ")));
 				}
 
 				Collection<String> content = new ArrayList<String>(bundles.size());
-				for (ContentInfo contentInfo : bundles) {
-					switch (contentInfo.getType()) {
+				for (BundleInfo BundleInfo : bundles) {
+					switch (BundleInfo.getType()) {
 					case bundle:
-						BundleInfo bundleInfo = (BundleInfo) contentInfo;
+						BundleInfo bundleInfo = (BundleInfo) BundleInfo;
 						content.add(MessageFormat.format("{0};version=\"{1}\"", bundleInfo.getName(), bundleInfo.getVersion()));
 						break;
 					default:
-						content.add(MessageFormat.format("{0};type=\"{1}\"", contentInfo.getName(), contentInfo.getType().name()));
+						content.add(MessageFormat.format("{0};type=\"{1}\"", BundleInfo.getName(), BundleInfo.getType().name()));
 						break;
 					}
 				}
-				manifest.addConfiguredAttribute(new Attribute(SUBSYSTEM_CONTENT, join(content, ", ")));
+				manifest.addConfiguredAttribute(new Attribute(SUBSYSTEM_CONTENT, StringUtils.join(content, ", ")));
 			}
 		} catch (ManifestException e) {
 			log("Manifest is invalid: " + e.getMessage(), Project.MSG_ERR);
@@ -353,7 +300,7 @@ public class Esa extends Zip {
 	}
 
 	/** constructor */
-	public Esa() {
+	public ESA() {
 		super();
 		archiveType = "esa";
 		setEncoding("UTF8");

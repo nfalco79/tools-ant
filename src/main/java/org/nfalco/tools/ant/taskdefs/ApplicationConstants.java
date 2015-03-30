@@ -1,6 +1,6 @@
 package org.nfalco.tools.ant.taskdefs;
 
-final class ApplicationConstants {
+public final class ApplicationConstants {
 
 	public static final String APPLICATION_MANIFEST_VERSION = "Application-ManifestVersion";
 

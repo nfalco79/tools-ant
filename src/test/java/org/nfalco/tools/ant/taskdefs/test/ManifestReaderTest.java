@@ -33,7 +33,6 @@ public class ManifestReaderTest {
 		mf.addConfiguredSection(section2);
 
 		File mfFile = File.createTempFile("MANIFEST", ".MF");
-		mfFile.deleteOnExit();
 		PrintWriter writer = new PrintWriter(mfFile);
 		mf.write(writer);
 		FileUtils.close(writer);
@@ -62,7 +61,13 @@ public class ManifestReaderTest {
 		section2.addConfiguredAttribute(new Attribute("Nested-Attribute"));
 		mfReaderTask.addConfiguredSection(section2);
 
-		mfReaderTask.execute();
+		try {
+			mfReaderTask.execute();
+		} finally {
+			if (!mfFile.delete()) {
+				mfFile.deleteOnExit();
+			}
+		}
 
 		assertEquals("Wrong value for property mf.Bundle-SymbolicName", "com.example.bundle", project.getProperty("mf.Bundle-SymbolicName"));
 		assertEquals("Wrong value for property mf.Section1.Nested-Attribute", "nested.section1", project.getProperty("mf.Section1.Nested-Attribute"));
@@ -81,7 +86,13 @@ public class ManifestReaderTest {
 		mfReaderTask.setFile(mfFile);
 		mfReaderTask.setPrefix("mf.");
 
-		mfReaderTask.execute();
+		try {
+			mfReaderTask.execute();
+		} finally {
+			if (!mfFile.delete()) {
+				mfFile.deleteOnExit();
+			}
+		}
 
 		assertEquals("Wrong value for property mf.Bundle-SymbolicName", "com.example.bundle", project.getProperty("mf.Bundle-SymbolicName"));
 		assertEquals("Wrong value for property mf.Section1.Other-Nested-Attribute", "other.nested.section1", project.getProperty("mf.Section1.Other-Nested-Attribute"));
