@@ -1,5 +1,9 @@
 package org.nfalco.tools.ant.taskdefs;
 
+import static org.nfalco.tools.ant.taskdefs.BundleConstants.*;
+import static org.nfalco.tools.ant.taskdefs.IBMSubsystemConstants.*;
+import static org.nfalco.tools.ant.taskdefs.SubsystemConstants.*;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -13,9 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
+import java.util.Iterator;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -29,7 +31,6 @@ import org.apache.tools.ant.types.EnumeratedAttribute;
 import org.apache.tools.ant.types.Resource;
 import org.apache.tools.ant.types.ResourceCollection;
 import org.apache.tools.ant.types.ZipFileSet;
-import org.apache.tools.ant.types.resources.FileResource;
 import org.apache.tools.ant.util.FileUtils;
 import org.apache.tools.zip.JarMarker;
 import org.apache.tools.zip.ZipExtraField;
@@ -52,7 +53,7 @@ public class Esa extends Zip {
 	private String license;
 	private Visibility visibility = Visibility.PRIVATE;
 	private boolean singleton;
-	private Map<String, ContentInfo> contentMap = new HashMap<String, Esa.ContentInfo>();
+	protected Collection<ContentInfo> bundles = new ArrayList<ContentInfo>();
 
 	/**
 	 * EnumeratedAttribute covering the visibility types to be checked for,
@@ -125,21 +126,42 @@ public class Esa extends Zip {
 
 	}
 
-	private class ContentInfo {
+	class ContentInfo {
 		protected String name;
 		protected ContentType type;
+
+		public String getName() {
+			return name;
+		}
+
+		public ContentType getType() {
+			return type;
+		}
 	}
 
-	private class BundleInfo extends ContentInfo {
+	class BundleInfo extends ContentInfo {
 		private String version;
 		private String[] exportPackage;
+		private String context;
+
+		public String getVersion() {
+			return version;
+		}
+
+		public String[] getExportPackage() {
+			return exportPackage;
+		}
+
+		public String getContext() {
+			return context;
+		}
 	}
 
-	private enum ContentType {
+	enum ContentType {
 		bundle, feature, jar, file
 	}
 
-	private static String join(Collection<String> list, String conjunction) {
+	protected static String join(Collection<String> list, String conjunction) {
 		StringBuilder sb = new StringBuilder();
 		boolean first = true;
 		for (String item : list) {
@@ -159,31 +181,29 @@ public class Esa extends Zip {
 
 	@Override
 	protected ArchiveState getResourcesToAdd(ResourceCollection[] rcs, File zipFile, boolean needsUpdate) throws BuildException {
+		for (ResourceCollection rc : rcs) {
+			for (@SuppressWarnings("unchecked") Iterator<Resource> iterator = rc.iterator(); iterator.hasNext();) {
+				Resource resource = iterator.next();
+				try {
+					bundles.add(parseManifest(resource));
+				} catch (IOException e) {
+					log("Could not parse resource " + resource.getName(), Project.MSG_WARN);
+				}
+			}
+		}
 		return super.getResourcesToAdd(rcs, zipFile, needsUpdate);
 	}
 
-	@Override
-	public void add(ResourceCollection rc) {
-		// TODO parseManifest here
-		super.add(rc);
-	}
-
-	@Override
-	protected void zipFile(File file, ZipOutputStream zOut, String vPath, int mode) throws IOException {
-		parseManifest(vPath, new FileResource(file));
-		super.zipFile(file, zOut, vPath, mode);
-	}
-
-	private void parseManifest(String vPath, Resource resource) throws IOException {
+	protected ContentInfo parseManifest(Resource resource) throws IOException {
 		ContentInfo contentInfo = new ContentInfo();
 
-		contentInfo.name = new File(vPath).getName();
-		if (contentInfo.name.lastIndexOf('.') != -1) {
+		contentInfo.name = new File(resource.getName()).getName();
+		if (contentInfo.getName().lastIndexOf('.') != -1) {
 			// remove extension from file
-			contentInfo.name = contentInfo.name.substring(0, contentInfo.name.lastIndexOf('.'));
+			contentInfo.name = contentInfo.getName().substring(0, contentInfo.getName().lastIndexOf('.'));
 		}
 
-		if (vPath.endsWith(".jar")) {
+		if (contentInfo.getName().endsWith(".jar")) {
 			contentInfo.type = ContentType.jar;
 
 			ZipInputStream zip = null;
@@ -202,14 +222,17 @@ public class Esa extends Zip {
 						} finally {
 							reader.close();
 						}
-						String manifestVersion = manifest.getMainSection().getAttributeValue("Bundle-ManifestVersion");
+						String manifestVersion = manifest.getMainSection().getAttributeValue(BUNDLE_MANIFEST_VERSION);
 						if (!isBlank(manifestVersion) && Integer.valueOf(manifestVersion) >= 2) {
 							BundleInfo bundleInfo = new BundleInfo();
 							bundleInfo.type = ContentType.bundle;
-							bundleInfo.name = manifest.getMainSection().getAttributeValue("Bundle-SymbolicName");
-							bundleInfo.version = manifest.getMainSection().getAttributeValue("Bundle-Version");
-							Attribute exportPackage = manifest.getMainSection().getAttribute("Export-Package");
-							bundleInfo.exportPackage = exportPackage.getValue().split(",\\s+");
+							bundleInfo.name = manifest.getMainSection().getAttributeValue(BUNDLE_SYMBOLIC_NAME);
+							bundleInfo.version = manifest.getMainSection().getAttributeValue(BUNDLE_VERSION);
+							bundleInfo.context = manifest.getMainSection().getAttributeValue(BUNDLE_CONTEXT_PATH);
+							Attribute exportPackage = manifest.getMainSection().getAttribute(BUNDLE_EXPORT_PACKAGE);
+							if (exportPackage != null) {
+								bundleInfo.exportPackage = exportPackage.getValue().split(",\\s+");
+							}
 							contentInfo = bundleInfo;
 						}
 						break;
@@ -223,7 +246,7 @@ public class Esa extends Zip {
 		} else {
 			contentInfo.type = ContentType.file;
 		}
-		contentMap.put(vPath, contentInfo);
+		return contentInfo;
 	}
 
 	@Override
@@ -254,65 +277,73 @@ public class Esa extends Zip {
 
 		ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
 		try {
-			super.zipFile(bais, zOut, SUBSYTEM_NAME, System.currentTimeMillis(), null, ZipFileSet.DEFAULT_FILE_MODE);
+			zipFile(bais, zOut, getManifestPath(), System.currentTimeMillis(), null, ZipFileSet.DEFAULT_FILE_MODE);
 		} finally {
 			// not really required
 			FileUtils.close(bais);
 		}
 	}
 
+	protected String getManifestPath() {
+		return SUBSYTEM_NAME;
+	}
+
 	protected Manifest createManifest() throws BuildException {
 		Manifest manifest = Manifest.getDefaultManifest();
 		try {
-			manifest.addConfiguredAttribute(new Attribute("IBM-Feature-Version", "2"));
+			manifest.addConfiguredAttribute(new Attribute(IBM_FEATURE_VERSION, "2"));
 			if (!isBlank(name)) {
-				manifest.addConfiguredAttribute(new Attribute("IBM-ShortName", name));
-				manifest.addConfiguredAttribute(new Attribute("Subsystem-Name", name));
+				manifest.addConfiguredAttribute(new Attribute(IBM_SHORT_NAME, name));
+				manifest.addConfiguredAttribute(new Attribute(SUBSYSTEM_NAME, name));
 			}
 			if (!isBlank(version)) {
-				manifest.addConfiguredAttribute(new Attribute("Subsystem-Version", version));
+				manifest.addConfiguredAttribute(new Attribute(SUBSYSTEM_VERSION, version));
 			}
 			if (!isBlank(license)) {
-				manifest.addConfiguredAttribute(new Attribute("Subsystem-License", license));
+				manifest.addConfiguredAttribute(new Attribute(SUBSYSTEM_LICENSE, license));
 			}
-			manifest.addConfiguredAttribute(new Attribute("Subsystem-ManifestVersion", "1"));
+			manifest.addConfiguredAttribute(new Attribute(SUBSYSTEM_MANIFEST_VERSION, "1"));
 
 			StringBuilder symbolicName = new StringBuilder();
 			symbolicName.append(this.symbolicName);
 			if (!visibility.isPrivate()) {
-				symbolicName.append("; visibility:=").append(visibility.getValue());
+				symbolicName.append(";visibility:=").append(visibility.getValue());
 			}
 			if (singleton) {
-				symbolicName.append("; singleton:=").append(singleton);
+				symbolicName.append(";singleton:=").append(singleton);
 			}
-			manifest.addConfiguredAttribute(new Attribute("Subsystem-SymbolicName", symbolicName.toString()));
+			manifest.addConfiguredAttribute(new Attribute(SUBSYSTEM_SYMBOLIC_NAME, symbolicName.toString()));
 
-			if (!contentMap.isEmpty()) {
+			if (!bundles.isEmpty()) {
 				Collection<String> exportPackages = new ArrayList<String>();
-				for (ContentInfo contentInfo : contentMap.values()) {
-					if (contentInfo.type == ContentType.bundle) {
+				for (ContentInfo contentInfo : bundles) {
+					if (contentInfo.type == ContentType.bundle && ((BundleInfo) contentInfo).getExportPackage() != null) {
 						BundleInfo bundleInfo = (BundleInfo) contentInfo;
-						exportPackages.addAll(Arrays.asList(bundleInfo.exportPackage));
+						for (int i = 0; i < bundleInfo.getExportPackage().length; i++) {
+							if (bundleInfo.getExportPackage()[i].startsWith("javax.")) {
+								bundleInfo.getExportPackage()[i] += ";type=\"spec\"";
+							}
+						}
+						exportPackages.addAll(Arrays.asList(bundleInfo.getExportPackage()));
 					}
 				}
 				if (!exportPackages.isEmpty()) {
-					manifest.addConfiguredAttribute(new Attribute("IBM-API-Package", join(exportPackages, ", ")));
+					manifest.addConfiguredAttribute(new Attribute(IBM_API_PACKAGE, join(exportPackages, ", ")));
 				}
 
-				Collection<String> content = new ArrayList<String>(contentMap.size());
-				for (Entry<String, ContentInfo> entry : contentMap.entrySet()) {
-					ContentInfo contentInfo = entry.getValue();
-					switch (contentInfo.type) {
+				Collection<String> content = new ArrayList<String>(bundles.size());
+				for (ContentInfo contentInfo : bundles) {
+					switch (contentInfo.getType()) {
 					case bundle:
 						BundleInfo bundleInfo = (BundleInfo) contentInfo;
-						content.add(MessageFormat.format("{0}; version=\"{1}\"", bundleInfo.name, bundleInfo.version));
+						content.add(MessageFormat.format("{0};version=\"{1}\"", bundleInfo.getName(), bundleInfo.getVersion()));
 						break;
 					default:
-						content.add(MessageFormat.format("{0}; type=\"{1}\"", contentInfo.name, contentInfo.type.name()));
+						content.add(MessageFormat.format("{0};type=\"{1}\"", contentInfo.getName(), contentInfo.getType().name()));
 						break;
 					}
 				}
-				manifest.addConfiguredAttribute(new Attribute("Subsystem-Content", join(content, ", ")));
+				manifest.addConfiguredAttribute(new Attribute(SUBSYSTEM_CONTENT, join(content, ", ")));
 			}
 		} catch (ManifestException e) {
 			log("Manifest is invalid: " + e.getMessage(), Project.MSG_ERR);
@@ -343,13 +374,25 @@ public class Esa extends Zip {
 		this.name = name;
 	}
 
+	public String getName() {
+		return name;
+	}
+
 	public void setVersion(String version) {
 		// check version format
 		this.version = version;
 	}
 
+	public String getVersion() {
+		return version;
+	}
+
 	public void setSymbolicName(String symbolicName) {
 		this.symbolicName = symbolicName;
+	}
+
+	public String getSymbolicName() {
+		return symbolicName;
 	}
 
 	public Visibility getVisibility() {

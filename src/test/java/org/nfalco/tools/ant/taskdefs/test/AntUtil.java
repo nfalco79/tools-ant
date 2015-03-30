@@ -7,7 +7,7 @@ import org.apache.tools.ant.DefaultLogger;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.ProjectHelper;
 
-final class AntUtil {
+/* package */final class AntUtil {
 
 	/**
 	 * To execute the specified target in the Ant build.xml file.
@@ -62,7 +62,7 @@ final class AntUtil {
 
 		return consoleLogger;
 	}
-	
+
 	public static Project createEmptyProject() {
 		DefaultLogger consoleLogger = getConsoleLogger();
 
