@@ -44,25 +44,26 @@ public class ManifestReaderTest {
 	public void manifestreader_with_prefix() throws Exception {
 		File mfFile = createManifest();
 
-		ManifestReader mfReaderTask = new ManifestReader();
 		Project project = AntUtil.createEmptyProject();
-		mfReaderTask.setProject(project);
 
-		mfReaderTask.setFile(mfFile);
-		mfReaderTask.setPrefix("mf.");
-		mfReaderTask.addConfiguredAttribute(new Attribute("Bundle-SymbolicName"));
+		ManifestReader task = new ManifestReader();
+		task.setProject(project);
+
+		task.setFile(mfFile);
+		task.setPrefix("mf.");
+		task.addConfiguredAttribute(new Attribute("Bundle-SymbolicName"));
 
 		Section section1 = new Section("Section1");
 		section1.addConfiguredAttribute(new Attribute("Nested-Attribute"));
 		section1.addConfiguredAttribute(new Attribute("Other-Nested-Attribute", "my.own.property"));
-		mfReaderTask.addConfiguredSection(section1);
+		task.addConfiguredSection(section1);
 
 		Section section2 = new Section("Section2");
 		section2.addConfiguredAttribute(new Attribute("Nested-Attribute"));
-		mfReaderTask.addConfiguredSection(section2);
+		task.addConfiguredSection(section2);
 
 		try {
-			mfReaderTask.execute();
+			task.execute();
 		} finally {
 			if (!mfFile.delete()) {
 				mfFile.deleteOnExit();
