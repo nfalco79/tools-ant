@@ -11,7 +11,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.taskdefs.Manifest;
 import org.apache.tools.ant.taskdefs.Manifest.Attribute;
@@ -72,7 +71,7 @@ public class EBATest {
 		File ebaFile = File.createTempFile("test", ".eba");
 		ebaFile.delete();
 
-		Project project = new Project();
+		Project project = AntUtil.createEmptyProject();
 
 		EBA task = new EBA();
 		task.setProject(project);
@@ -91,7 +90,7 @@ public class EBATest {
 		externalContent.setFile(webBundle);
 
 		task.add(fileSet);
-		task.addExtraFileSet(externalContent);
+		task.addWAB(externalContent);
 		try {
 			task.execute();
 
@@ -126,7 +125,7 @@ public class EBATest {
 			assertTrue(attribute.getValue().contains(WAB_SYMBOLICNAME + ";version=\"" + WAB_VERSION + "\""));
 			assertTrue(attribute.getValue().contains(BUNDLE_SYMBOLICNAME + ";version=\"" + BUNDLE_VERSION + "\""));
 
-			IOUtils.closeQuietly(zf);
+			zf.close();
 		} finally {
 			if (!ebaFile.delete()) {
 				ebaFile.deleteOnExit();

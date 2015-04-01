@@ -13,24 +13,46 @@ import org.apache.tools.ant.Project;
 import org.apache.tools.ant.taskdefs.Manifest;
 import org.apache.tools.ant.taskdefs.Manifest.Attribute;
 import org.apache.tools.ant.taskdefs.ManifestException;
-import org.apache.tools.ant.types.FileSet;
 import org.apache.tools.ant.types.Resource;
+import org.apache.tools.ant.types.ResourceCollection;
+import org.apache.tools.ant.types.ZipFileSet;
 import org.nfalco.tools.ant.taskdefs.BundleInfo.ContentType;
 import org.nfalco.tools.ant.taskdefs.util.StringUtils;
 
 public class EBA extends ESA {
+	private static final String META_INF = "META-INF/";
 	/** The application file name. */
-	private static final String APPLICATION_NAME = "META-INF/APPLICATION.MF";
+	private static final String APPLICATION_NAME = META_INF + "APPLICATION.MF";
 
-	private FileSet content;
-	private Collection<BundleInfo> wab = new ArrayList<BundleInfo>();
+	private Collection<ResourceCollection> wabResources = new ArrayList<ResourceCollection>(1);
 
-	public void addExtraFileSet(FileSet fileSet) {
-		this.content = fileSet;
-	}
+//	public void addExternalWABFileSet(FileSet set) {
+//		addExternalWAB(set);
+//	}
 
-	@Override
-	protected String getManifestPath() {
+    /**
+     * Adds a set of files that can be
+     * read from an archive and be given a prefix/fullpath.
+     */
+    public void addWAB(ZipFileSet set) {
+    	addWAB((ResourceCollection) set);
+    }
+
+    /**
+     * Add a collection of resources to be archived.
+     * @param a the resources to archive
+     */
+    public void addWAB(ResourceCollection a) {
+        wabResources.add(a);
+    }
+
+    @Override
+    protected String getManifestPath() {
+    	return META_INF;
+    }
+
+    @Override
+	protected String getManifestFilePath() {
 		return APPLICATION_NAME;
 	}
 
@@ -41,26 +63,28 @@ public class EBA extends ESA {
 		Manifest manifest = Manifest.getDefaultManifest();
 		try {
 			manifest.addConfiguredAttribute(new Attribute(APPLICATION_MANIFEST_VERSION, "1.0"));
-			manifest.addConfiguredAttribute(new Attribute(ApplicationConstants.APPLICATION_NAME, getName()));
+			if (getName() != null) {
+				manifest.addConfiguredAttribute(new Attribute(ApplicationConstants.APPLICATION_NAME, getName()));
+			}
 			manifest.addConfiguredAttribute(new Attribute(APPLICATION_VERSION, getVersion()));
 			manifest.addConfiguredAttribute(new Attribute(APPLICATION_SYMBOLIC_NAME, getSymbolicName()));
-			if (content != null && content.size() > 0) {
-				@SuppressWarnings("unchecked")
-				Iterator<Resource> it = content.iterator();
-				while (it.hasNext()) {
-					Resource resource = it.next();
-					try {
-						BundleInfo bundleInfo = parseManifest(resource);
-						if (bundleInfo.getType() == ContentType.bundle && bundleInfo.getContext() != null) {
-							wab.add(bundleInfo);
+			if (!wabResources.isEmpty()) {
+				Collection<BundleInfo> applicationContent = new ArrayList<BundleInfo>(bundles);
+				for (ResourceCollection rc : wabResources) {
+					@SuppressWarnings("unchecked")
+					Iterator<Resource> it = rc.iterator();
+					while (it.hasNext()) {
+						Resource resource = it.next();
+						try {
+							BundleInfo bundleInfo = parseManifest(resource);
+							if (bundleInfo.getType() == ContentType.bundle && bundleInfo.getContext() != null) {
+								applicationContent.add(bundleInfo);
+							}
+						} catch (IOException e) {
+							log("Could not parse resource " + resource.getName(), Project.MSG_WARN);
 						}
-					} catch (IOException e) {
-						log("Could not parse resource " + resource.getName(), Project.MSG_WARN);
 					}
 				}
-
-				Collection<BundleInfo> applicationContent = new ArrayList<BundleInfo>(bundles);
-				applicationContent.addAll(wab);
 
 				if (!applicationContent.isEmpty()) {
 					Collection<String> bundles = new ArrayList<String>();
