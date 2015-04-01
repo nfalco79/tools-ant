@@ -42,8 +42,10 @@ public class ESA extends Zip {
 
 	/** The manifest file name. */
 	private static final String MANIFEST_NAME = "META-INF/MANIFEST.MF";
+	private static final String OSGI_INF = "OSGI-INF/";
 	/** The subsystem file name. */
-	private static final String SUBSYTEM_NAME = "OSGI-INF/SUBSYSTEM.MF";
+	private static final String SUBSYTEM_NAME = OSGI_INF + "SUBSYSTEM.MF";
+
 	/**
 	 * Extra fields needed to make Solaris recognize the archive as a jar file.
 	 */
@@ -211,7 +213,7 @@ public class ESA extends Zip {
 			log("Manifest warning: " + e.nextElement(), Project.MSG_WARN);
 		}
 
-		zipDir((Resource) null, zOut, "OSGI-INF/", ZipFileSet.DEFAULT_DIR_MODE, JAR_MARKER);
+		zipDir((Resource) null, zOut, getManifestPath(), ZipFileSet.DEFAULT_DIR_MODE, JAR_MARKER);
 		// time to write the manifest
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		OutputStreamWriter osw = new OutputStreamWriter(baos, Manifest.JAR_ENCODING);
@@ -224,7 +226,7 @@ public class ESA extends Zip {
 
 		ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
 		try {
-			zipFile(bais, zOut, getManifestPath(), System.currentTimeMillis(), null, ZipFileSet.DEFAULT_FILE_MODE);
+			zipFile(bais, zOut, getManifestFilePath(), System.currentTimeMillis(), null, ZipFileSet.DEFAULT_FILE_MODE);
 		} finally {
 			// not really required
 			FileUtils.close(bais);
@@ -232,6 +234,10 @@ public class ESA extends Zip {
 	}
 
 	protected String getManifestPath() {
+		return OSGI_INF;
+	}
+
+	protected String getManifestFilePath() {
 		return SUBSYTEM_NAME;
 	}
 
@@ -249,7 +255,7 @@ public class ESA extends Zip {
 			if (!StringUtils.isBlank(license)) {
 				manifest.addConfiguredAttribute(new Attribute(SUBSYSTEM_LICENSE, license));
 			}
-			manifest.addConfiguredAttribute(new Attribute(SUBSYSTEM_MANIFEST_VERSION, "1"));
+			manifest.addConfiguredAttribute(new Attribute(SUBSYSTEM_MANIFEST_VERSION, "1.0"));
 
 			StringBuilder symbolicName = new StringBuilder();
 			symbolicName.append(this.symbolicName);
@@ -260,12 +266,13 @@ public class ESA extends Zip {
 				symbolicName.append(";singleton:=").append(singleton);
 			}
 			manifest.addConfiguredAttribute(new Attribute(SUBSYSTEM_SYMBOLIC_NAME, symbolicName.toString()));
+			manifest.addConfiguredAttribute(new Attribute(SUBSYSTEM_TYPE, "osgi.subsystem.feature"));
 
 			if (!bundles.isEmpty()) {
 				Collection<String> exportPackages = new ArrayList<String>();
 				for (BundleInfo BundleInfo : bundles) {
 					if (BundleInfo.getType() == ContentType.bundle && BundleInfo.getExportPackage() != null) {
-						BundleInfo bundleInfo = (BundleInfo) BundleInfo;
+						BundleInfo bundleInfo = BundleInfo;
 						for (int i = 0; i < bundleInfo.getExportPackage().length; i++) {
 							if (bundleInfo.getExportPackage()[i].startsWith("javax.")) {
 								bundleInfo.getExportPackage()[i] += ";type=\"spec\"";
@@ -282,7 +289,7 @@ public class ESA extends Zip {
 				for (BundleInfo BundleInfo : bundles) {
 					switch (BundleInfo.getType()) {
 					case bundle:
-						BundleInfo bundleInfo = (BundleInfo) BundleInfo;
+						BundleInfo bundleInfo = BundleInfo;
 						content.add(MessageFormat.format("{0};version=\"{1}\"", bundleInfo.getName(), bundleInfo.getVersion()));
 						break;
 					default:

@@ -11,7 +11,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.taskdefs.Manifest;
 import org.apache.tools.ant.taskdefs.Manifest.Attribute;
@@ -51,7 +50,7 @@ public class ESATest {
 		File esaFile = File.createTempFile("test", ".esa");
 		esaFile.delete();
 
-		Project project = new Project();
+		Project project = AntUtil.createEmptyProject();
 
 		ESA task = new ESA();
 		task.setProject(project);
@@ -84,7 +83,7 @@ public class ESATest {
 
 			Attribute attribute = mf.getMainSection().getAttribute(SubsystemConstants.SUBSYSTEM_MANIFEST_VERSION);
 			assertNotNull(attribute);
-			assertEquals("1", attribute.getValue());
+			assertEquals("1.0", attribute.getValue());
 
 			attribute = mf.getMainSection().getAttribute(SubsystemConstants.SUBSYSTEM_SYMBOLIC_NAME);
 			assertNotNull(attribute);
@@ -94,12 +93,16 @@ public class ESATest {
 			assertNotNull(attribute);
 			assertEquals(esaVersion, attribute.getValue());
 
+			attribute = mf.getMainSection().getAttribute(SubsystemConstants.SUBSYSTEM_TYPE);
+			assertNotNull(attribute);
+			assertEquals("osgi.subsystem.feature", attribute.getValue());
+
 			attribute = mf.getMainSection().getAttribute(SubsystemConstants.SUBSYSTEM_CONTENT);
 			assertNotNull(attribute);
 			assertTrue(attribute.getValue().startsWith(BUNDLE_SYMBOLICNAME));
 			assertTrue(attribute.getValue().contains("version=\"" + BUNDLE_VERSION + "\""));
 
-			IOUtils.closeQuietly(zf);
+			zf.close();
 		} finally {
 			if (!esaFile.delete()) {
 				esaFile.deleteOnExit();
