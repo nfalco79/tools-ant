@@ -68,33 +68,32 @@ public class EBA extends ESA {
 			}
 			manifest.addConfiguredAttribute(new Attribute(APPLICATION_VERSION, getVersion()));
 			manifest.addConfiguredAttribute(new Attribute(APPLICATION_SYMBOLIC_NAME, getSymbolicName()));
-			if (!wabResources.isEmpty()) {
-				Collection<BundleInfo> applicationContent = new ArrayList<BundleInfo>(bundles);
-				for (ResourceCollection rc : wabResources) {
-					@SuppressWarnings("unchecked")
-					Iterator<Resource> it = rc.iterator();
-					while (it.hasNext()) {
-						Resource resource = it.next();
-						try {
-							BundleInfo bundleInfo = parseManifest(resource);
-							if (bundleInfo.getType() == ContentType.bundle && bundleInfo.getContext() != null) {
-								applicationContent.add(bundleInfo);
-							}
-						} catch (IOException e) {
-							log("Could not parse resource " + resource.getName(), Project.MSG_WARN);
-						}
-					}
-				}
 
-				if (!applicationContent.isEmpty()) {
-					Collection<String> bundles = new ArrayList<String>();
-					for (BundleInfo bundleInfo : applicationContent) {
-						if (bundleInfo.getType() == ContentType.bundle) {
-							bundles.add(MessageFormat.format("{0};version=\"{1}\"", bundleInfo.getName(), bundleInfo.getVersion()));
+			Collection<BundleInfo> applicationContent = new ArrayList<BundleInfo>(bundles);
+			for (ResourceCollection rc : wabResources) {
+				@SuppressWarnings("unchecked")
+				Iterator<Resource> it = rc.iterator();
+				while (it.hasNext()) {
+					Resource resource = it.next();
+					try {
+						BundleInfo bundleInfo = parseManifest(resource);
+						if (bundleInfo.getType() == ContentType.bundle && bundleInfo.getContext() != null) {
+							applicationContent.add(bundleInfo);
 						}
+					} catch (IOException e) {
+						log("Could not parse resource " + resource.getName(), Project.MSG_WARN);
 					}
-					manifest.addConfiguredAttribute(new Attribute(APPLICATION_CONTENT, StringUtils.join(bundles, ", ")));
 				}
+			}
+
+			if (!applicationContent.isEmpty()) {
+				Collection<String> bundles = new ArrayList<String>();
+				for (BundleInfo bundleInfo : applicationContent) {
+					if (bundleInfo.getType() == ContentType.bundle) {
+						bundles.add(MessageFormat.format("{0};version=\"{1}\"", bundleInfo.getName(), bundleInfo.getVersion()));
+					}
+				}
+				manifest.addConfiguredAttribute(new Attribute(APPLICATION_CONTENT, StringUtils.join(bundles, ", ")));
 			}
 		} catch (ManifestException e) {
 			log("Manifest is invalid: " + e.getMessage(), Project.MSG_ERR);

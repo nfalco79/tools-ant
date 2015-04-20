@@ -132,4 +132,67 @@ public class EBATest {
 			}
 		}
 	}
+
+	@Test
+	public void eba_no_wab() throws Exception {
+		String ebaSymbolicName = "org.nfalco.eba.sample";
+		String ebaVersion = "1.0.0.110";
+
+		File ebaFile = File.createTempFile("test_no_wab", ".eba");
+		ebaFile.delete();
+
+		Project project = AntUtil.createEmptyProject();
+
+		EBA task = new EBA();
+		task.setProject(project);
+		task.setDestFile(ebaFile);
+		task.setSymbolicName(ebaSymbolicName);
+		task.setVersion(ebaVersion);
+
+		File bundle = createBundle();
+		FileSet fileSet = new FileSet();
+		fileSet.setProject(project);
+		fileSet.setFile(bundle);
+
+		task.add(fileSet);
+		try {
+			task.execute();
+
+			assertTrue(ebaFile.exists());
+			assertTrue(ebaFile.length() > 0);
+
+			ZipFile zf = new ZipFile(ebaFile);
+			ZipEntry ze = zf.getEntry(bundle.getName());
+			assertNotNull(ze);
+
+			ze = zf.getEntry("META-INF/APPLICATION.MF");
+			assertNotNull(ze);
+
+			InputStreamReader reader = new InputStreamReader(zf.getInputStream(ze));
+			Manifest mf = new Manifest(reader);
+			reader.close();
+
+			Attribute attribute = mf.getMainSection().getAttribute(ApplicationConstants.APPLICATION_MANIFEST_VERSION);
+			assertNotNull(attribute);
+			assertEquals("1.0", attribute.getValue());
+
+			attribute = mf.getMainSection().getAttribute(ApplicationConstants.APPLICATION_SYMBOLIC_NAME);
+			assertNotNull(attribute);
+			assertEquals(ebaSymbolicName, attribute.getValue());
+
+			attribute = mf.getMainSection().getAttribute(ApplicationConstants.APPLICATION_VERSION);
+			assertNotNull(attribute);
+			assertEquals(ebaVersion, attribute.getValue());
+
+			attribute = mf.getMainSection().getAttribute(ApplicationConstants.APPLICATION_CONTENT);
+			assertNotNull(attribute);
+			assertTrue(attribute.getValue().contains(BUNDLE_SYMBOLICNAME + ";version=\"" + BUNDLE_VERSION + "\""));
+
+			zf.close();
+		} finally {
+			if (!ebaFile.delete()) {
+				ebaFile.deleteOnExit();
+			}
+		}
+	}
 }
