@@ -288,6 +288,10 @@ public class ManifestReader extends Task {
 				mapAllAttributes(current);
 			}
 
+			if (current == null) {
+				return;
+			}
+
 			bindAttributes(mainSection, current.getMainSection());
 			for (Section section : sections) {
 				Manifest.Section readSection = current.getSection(section.getName());
