@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.github.nfalco79.tools.ant.types;
+package com.github.nfalco79.tools.ant.types.jmx;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;

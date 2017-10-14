@@ -33,10 +33,10 @@ import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Task;
 import org.apache.tools.ant.taskdefs.condition.Condition;
 
-import com.github.nfalco79.tools.ant.types.AbstractMBeanType;
-import com.github.nfalco79.tools.ant.types.GetAttribute;
-import com.github.nfalco79.tools.ant.types.InvokeOperation;
-import com.github.nfalco79.tools.ant.types.InvokeOperation.Parameter;
+import com.github.nfalco79.tools.ant.types.jmx.AbstractMBeanType;
+import com.github.nfalco79.tools.ant.types.jmx.GetAttribute;
+import com.github.nfalco79.tools.ant.types.jmx.InvokeOperation;
+import com.github.nfalco79.tools.ant.types.jmx.InvokeOperation.Parameter;
 import com.j256.simplejmx.client.JmxClient;
 
 public class JMXTask extends Task implements Condition {
