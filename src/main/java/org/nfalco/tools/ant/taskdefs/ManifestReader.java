@@ -1,3 +1,21 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package org.nfalco.tools.ant.taskdefs;
 
 import java.io.File;
@@ -24,14 +42,15 @@ import org.apache.tools.ant.util.FileUtils;
 /**
  * Parse the data of a jar manifest.
  *
+ * <p>
  * Manifests are processed according to the
- * {@link <a href="http://java.sun.com/j2se/1.5.0/docs/guide/jar/jar.html">Jar file specification</a>}
- * . Specifically, a manifest element consists of a set of attributes and
- * sections. These sections in turn may contain attributes.
+ * <a href="http://java.sun.com/j2se/1.5.0/docs/guide/jar/jar.html">Jar file
+ * specification</a> . Specifically, a manifest element consists of a set of
+ * attributes and sections. These sections in turn may contain attributes.
  * <p>
  * Each read attribute is mapped to an ant property composed with the
- * <code>&lt;section name&gt;.&lt;attribute name&gt;</code> except for
- * attributes in the main section.
+ * {@code <section name>.<attribute name>} except for attributes in the main
+ * section.
  */
 public class ManifestReader extends Task {
 	/**
@@ -41,12 +60,6 @@ public class ManifestReader extends Task {
 	public static class Attribute {
 		private String name;
 		private String property;
-
-		/**
-		 * Construct an empty attribute.
-		 */
-		public Attribute() {
-		}
 
 		public Attribute(String name) {
 			this.name = name;
@@ -77,7 +90,7 @@ public class ManifestReader extends Task {
 		}
 
 		/**
-		 * Get the Ant property's name where is mapped this attribute.
+		 * Gets the Ant property's name where is mapped this attribute.
 		 *
 		 * @return the property's name.
 		 */
@@ -86,9 +99,10 @@ public class ManifestReader extends Task {
 		}
 
 		/**
-		 * Set the Ant property's name where map this attribute.
+		 * Sets the Ant property's name where map this attribute.
 		 *
-		 * @return the property's name.
+		 * @param property
+		 *            name.
 		 */
 		public void setProperty(String property) {
 			this.property = property;
@@ -166,12 +180,12 @@ public class ManifestReader extends Task {
 	}
 
 	/**
-	 * Add a section to the manifest
+	 * Adds a section to the manifest.
 	 *
 	 * @param section
-	 *            the manifest section to be added
+	 *            the manifest section to be added.
 	 */
-	public void addConfiguredSection(Section section) throws ManifestException {
+	public void addConfiguredSection(Section section) {
 		String sectionName = section.getName();
 		if (sectionName == null) {
 			throw new BuildException("Sections must have a name");
@@ -317,7 +331,8 @@ public class ManifestReader extends Task {
 		@SuppressWarnings("rawtypes")
 		Enumeration sectionNames = main.getSectionNames();
 		while (sectionNames.hasMoreElements()) {
-			org.apache.tools.ant.taskdefs.Manifest.Section readSection = main.getSection((String) sectionNames.nextElement());
+			org.apache.tools.ant.taskdefs.Manifest.Section readSection = main
+					.getSection((String) sectionNames.nextElement());
 			Section section = new Section(readSection.getName());
 			copyAttributes(readSection, section);
 			addConfiguredSection(section);
@@ -329,7 +344,8 @@ public class ManifestReader extends Task {
 		Enumeration attributeKeys = sourceSection.getAttributeKeys();
 
 		while (attributeKeys.hasMoreElements()) {
-			org.apache.tools.ant.taskdefs.Manifest.Attribute readAttribute = sourceSection.getAttribute((String) attributeKeys.nextElement());
+			org.apache.tools.ant.taskdefs.Manifest.Attribute readAttribute = sourceSection
+					.getAttribute((String) attributeKeys.nextElement());
 			Attribute attribute = new Attribute(readAttribute.getName());
 			destSection.addConfiguredAttribute(attribute);
 		}

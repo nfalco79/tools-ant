@@ -1,3 +1,21 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package org.nfalco.tools.ant.taskdefs;
 
 import static org.nfalco.tools.ant.taskdefs.ApplicationConstants.*;
@@ -26,32 +44,33 @@ public class EBA extends ESA {
 
 	private Collection<ResourceCollection> wabResources = new ArrayList<ResourceCollection>(1);
 
-//	public void addExternalWABFileSet(FileSet set) {
-//		addExternalWAB(set);
-//	}
+	/**
+	 * Adds a set of files that can be read from an archive and be given a
+	 * prefix/fullpath.
+	 *
+	 * @param zfs
+	 *            the zip fileset to archive.
+	 */
+	public void addWAB(ZipFileSet zfs) {
+		addWAB((ResourceCollection) zfs);
+	}
 
-    /**
-     * Adds a set of files that can be
-     * read from an archive and be given a prefix/fullpath.
-     */
-    public void addWAB(ZipFileSet set) {
-    	addWAB((ResourceCollection) set);
-    }
+	/**
+	 * Adds a collection of resources to be archived.
+	 *
+	 * @param rc
+	 *            the resources to archive.
+	 */
+	public void addWAB(ResourceCollection rc) {
+		wabResources.add(rc);
+	}
 
-    /**
-     * Add a collection of resources to be archived.
-     * @param a the resources to archive
-     */
-    public void addWAB(ResourceCollection a) {
-        wabResources.add(a);
-    }
+	@Override
+	protected String getManifestPath() {
+		return META_INF;
+	}
 
-    @Override
-    protected String getManifestPath() {
-    	return META_INF;
-    }
-
-    @Override
+	@Override
 	protected String getManifestFilePath() {
 		return APPLICATION_NAME;
 	}
@@ -90,7 +109,8 @@ public class EBA extends ESA {
 				Collection<String> bundles = new ArrayList<String>();
 				for (BundleInfo bundleInfo : applicationContent) {
 					if (bundleInfo.getType() == ContentType.bundle) {
-						bundles.add(MessageFormat.format("{0};version=\"{1}\"", bundleInfo.getName(), bundleInfo.getVersion()));
+						bundles.add(MessageFormat.format("{0};version=\"{1}\"", bundleInfo.getName(),
+								bundleInfo.getVersion()));
 					}
 				}
 				manifest.addConfiguredAttribute(new Attribute(APPLICATION_CONTENT, StringUtils.join(bundles, ", ")));
