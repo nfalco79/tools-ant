@@ -1,0 +1,4 @@
+language: java
+
+script:
+  - mvn test coveralls:report -P enable-jacoco -B

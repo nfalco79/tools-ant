@@ -12,6 +12,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Reader;
+import java.nio.charset.Charset;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -93,12 +94,12 @@ public class ESA extends Zip {
 		}
 
 		/**
+		 * {@inheritDoc}.
 		 * @see EnumeratedAttribute#getValues
 		 */
-		/** {@inheritDoc}. */
 		@Override
 		public String[] getValues() {
-			return VALUES;
+			return Arrays.copyOf(VALUES, VALUES.length);
 		}
 
 		/**
@@ -162,7 +163,7 @@ public class ESA extends Zip {
 				ZipEntry zipEntry;
 				while ((zipEntry = zip.getNextEntry()) != null) {
 					if (!zipEntry.isDirectory() && MANIFEST_NAME.equals(zipEntry.getName())) {
-						Reader reader = new InputStreamReader(zip);
+						Reader reader = new InputStreamReader(zip, Charset.defaultCharset());
 						Manifest manifest;
 						try {
 							manifest = new Manifest(reader);
@@ -173,7 +174,7 @@ public class ESA extends Zip {
 							reader.close();
 						}
 						String manifestVersion = manifest.getMainSection().getAttributeValue(BUNDLE_MANIFEST_VERSION);
-						if (!StringUtils.isBlank(manifestVersion) && Integer.valueOf(manifestVersion) >= 2) {
+						if (!StringUtils.isBlank(manifestVersion) && Integer.parseInt(manifestVersion) >= 2) {
 							BundleInfo bundleInfo = new BundleInfo();
 							bundleInfo.setType(ContentType.bundle);
 							bundleInfo.setName(manifest.getMainSection().getAttributeValue(BUNDLE_SYMBOLIC_NAME));

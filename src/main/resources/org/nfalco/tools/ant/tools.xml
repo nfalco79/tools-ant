@@ -4,7 +4,7 @@
 	<typedef name="manifestreader" classname="org.nfalco.tools.ant.taskdefs.ManifestReader" />
 	<typedef name="esa" classname="org.nfalco.tools.ant.taskdefs.ESA" />
 	<typedef name="eba" classname="org.nfalco.tools.ant.taskdefs.EBA" />
+	<typedef name="jmx" classname="org.nfalco.tools.ant.taskdefs.jmx.JMXTask" />
 	<typedef name="invokeOperation" onerror="ignore" classname="org.nfalco.tools.ant.types.InvokeOperation" />
 	<typedef name="getAttribute" onerror="ignore" classname="org.nfalco.tools.ant.types.GetAttribute" />
-	<typedef name="jmx" classname="org.nfalco.tools.ant.taskdefs.jmx.JMXTask2" />
 </antlib>
