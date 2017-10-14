@@ -2,6 +2,9 @@ target/
 bin/
 *.class
 .DS_Store
+.settings
+.project
+.classpath
 
 # Package Files #
 *.jar
