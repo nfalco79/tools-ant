@@ -47,6 +47,7 @@ public class JMXTask extends Task implements Condition {
 	private Collection<AbstractMBeanType> operations = new ArrayList<AbstractMBeanType>();
 
 	private JmxClient client;
+	private boolean isCondition;
 
 	public String getUrl() {
 		return url;
@@ -101,6 +102,10 @@ public class JMXTask extends Task implements Condition {
 		final Set<ObjectName> beans = client.getBeanNames(op.getDomain());
 		final Iterator<ObjectName> beansIterator = beans.iterator();
 
+		if (!beansIterator.hasNext()) {
+			throw new BuildException("Domain " + op.getDomain() + " not found for " + op.toString());
+		}
+
 		while (beansIterator.hasNext()) {
 			final ObjectName bean = beansIterator.next();
 			if (accept(op.getDomainAttributes(), bean)) {
@@ -126,13 +131,17 @@ public class JMXTask extends Task implements Condition {
 	}
 
 	private void getAttribute(final ObjectName bean, GetAttribute op) throws Exception {
-	    log("get attribute " + op.getAttribute());
+		if (!isCondition) {
+			log("get attribute " + op.getAttribute());
+		}
 
-	    op.setValue(client.getAttribute(bean, op.getAttribute()));
+		op.setValue(client.getAttribute(bean, op.getAttribute()));
 	}
 
 	private void invokeOperation(final ObjectName bean, InvokeOperation op) throws Exception {
-	    log("invoke operation " + op.getOperation());
+		if (!isCondition) {
+			log("invoke operation " + op.getOperation());
+		}
 
 		final Collection<Parameter> parameters = op.getParameters();
 		Object[] arguments = new Object[parameters.size()];
@@ -161,6 +170,7 @@ public class JMXTask extends Task implements Condition {
 			throw new BuildException("at most an operation is permitted");
 		}
 
+		isCondition = true;
 		try {
 			setupClient();
 
@@ -183,7 +193,7 @@ public class JMXTask extends Task implements Condition {
 	}
 
 	private void setupClient() {
-	    log("setup jmx client", Project.MSG_DEBUG);
+		log("setup jmx client", Project.MSG_DEBUG);
 
 		try {
 			log("connecting to " + url + " with user " + user + " and password " + password, Project.MSG_VERBOSE);
