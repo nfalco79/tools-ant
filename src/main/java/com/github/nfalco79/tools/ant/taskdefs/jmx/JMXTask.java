@@ -18,7 +18,6 @@
  */
 package com.github.nfalco79.tools.ant.taskdefs.jmx;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -30,6 +29,7 @@ import javax.management.JMException;
 import javax.management.ObjectName;
 
 import org.apache.tools.ant.BuildException;
+import org.apache.tools.ant.Project;
 import org.apache.tools.ant.Task;
 import org.apache.tools.ant.taskdefs.condition.Condition;
 
@@ -41,15 +41,9 @@ import com.j256.simplejmx.client.JmxClient;
 
 public class JMXTask extends Task implements Condition {
 
-	private static final String JAVAX_NET_SSL_TRUST_STORE_PASSWORD = "javax.net.ssl.trustStorePassword";
-	private static final String JAVAX_NET_SSL_TRUST_STORE = "javax.net.ssl.trustStore";
-
 	private String url;
 	private String user;
 	private String password;
-	private File trustStore;
-	private String trustStorePassword;
-	private File reportDir;
 	private Collection<AbstractMBeanType> operations = new ArrayList<AbstractMBeanType>();
 
 	private JmxClient client;
@@ -78,14 +72,6 @@ public class JMXTask extends Task implements Condition {
 		this.password = password;
 	}
 
-	public File getReportDir() {
-		return reportDir;
-	}
-
-	public void setReportDir(File reportDir) {
-		this.reportDir = reportDir;
-	}
-
 	@Override
 	public void execute() throws BuildException {
 		if (url == null || "".equals(url.trim())) {
@@ -98,6 +84,7 @@ public class JMXTask extends Task implements Condition {
 		try {
 			setupClient();
 
+			log(operations.size() + " JMX operation to perform");
 			for (AbstractMBeanType op : operations) {
 				execute(op);
 			}
@@ -139,10 +126,14 @@ public class JMXTask extends Task implements Condition {
 	}
 
 	private void getAttribute(final ObjectName bean, GetAttribute op) throws Exception {
-		op.setValue(client.getAttribute(bean, op.getAttribute()));
+	    log("get attribute " + op.getAttribute());
+
+	    op.setValue(client.getAttribute(bean, op.getAttribute()));
 	}
 
 	private void invokeOperation(final ObjectName bean, InvokeOperation op) throws Exception {
+	    log("invoke operation " + op.getOperation());
+
 		final Collection<Parameter> parameters = op.getParameters();
 		Object[] arguments = new Object[parameters.size()];
 		int i = 0;
@@ -192,54 +183,14 @@ public class JMXTask extends Task implements Condition {
 	}
 
 	private void setupClient() {
-		String currentTS = null;
-		String currentTSP = null;
+	    log("setup jmx client", Project.MSG_DEBUG);
 
 		try {
-			// very very dirty approach, no other working solution found for to
-			// connect client
-			if (trustStore != null) {
-				currentTS = System.setProperty(JAVAX_NET_SSL_TRUST_STORE, trustStore.getAbsolutePath());
-			}
-			if (trustStorePassword != null) {
-				currentTSP = System.setProperty(JAVAX_NET_SSL_TRUST_STORE_PASSWORD, trustStorePassword);
-			}
-
+			log("connecting to " + url + " with user " + user + " and password " + password, Project.MSG_VERBOSE);
 			client = new JmxClient(url, user, password);
 		} catch (JMException e) {
 			throw new BuildException("Could not connect to " + url, e);
-		} finally {
-			if (trustStore != null) {
-				if (currentTS == null) {
-					System.clearProperty(JAVAX_NET_SSL_TRUST_STORE);
-				} else {
-					System.setProperty(JAVAX_NET_SSL_TRUST_STORE, currentTS);
-				}
-			}
-			if (trustStorePassword != null) {
-				if (currentTSP == null) {
-					System.clearProperty(JAVAX_NET_SSL_TRUST_STORE_PASSWORD);
-				} else {
-					System.setProperty(JAVAX_NET_SSL_TRUST_STORE_PASSWORD, currentTSP);
-				}
-			}
 		}
-	}
-
-	public File getTrustStore() {
-		return trustStore;
-	}
-
-	public void setTrustStore(File trustStore) {
-		this.trustStore = trustStore;
-	}
-
-	public String getTrustStorePassword() {
-		return trustStorePassword;
-	}
-
-	public void setTrustStorePassword(String trustStorePassword) {
-		this.trustStorePassword = trustStorePassword;
 	}
 
 }

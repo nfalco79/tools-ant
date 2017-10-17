@@ -5,6 +5,6 @@
 	<typedef name="esa" classname="com.github.nfalco79.tools.ant.taskdefs.ESA" />
 	<typedef name="eba" classname="com.github.nfalco79.tools.ant.taskdefs.EBA" />
 	<typedef name="jmx" classname="com.github.nfalco79.tools.ant.taskdefs.jmx.JMXTask" />
-	<typedef name="invokeOperation" onerror="ignore" classname="com.github.nfalco79.tools.ant.types.InvokeOperation" />
-	<typedef name="getAttribute" onerror="ignore" classname="com.github.nfalco79.tools.ant.types.GetAttribute" />
+	<typedef name="invokeOperation" onerror="ignore" classname="com.github.nfalco79.tools.ant.types.jmx.InvokeOperation" />
+	<typedef name="getAttribute" onerror="ignore" classname="com.github.nfalco79.tools.ant.types.jmx.GetAttribute" />
 </antlib>
