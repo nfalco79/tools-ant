@@ -161,6 +161,7 @@ public class JMXTask extends Task implements Condition {
 				arguments[i++] = value;
 			}
 		}
+		log(op.toString(), Project.MSG_DEBUG);
 		op.setValue(client.invokeOperation(bean, op.getOperation(), arguments));
 	}
 

@@ -15,25 +15,34 @@
  */
 package com.github.nfalco79.tools.ant.taskdefs.util;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
 
 public final class StringUtils {
 
 	private StringUtils() {
 	}
 
-	public static String join(Collection<String> list, String conjunction) {
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public static String join(Collection<String> elements, String conjunction) {
+		return toString((Collection) elements, conjunction);
+	}
+
+	public static String toString(Collection<Object> elements, String conjunction) {
 		StringBuilder sb = new StringBuilder();
-		boolean first = true;
-		for (String item : list) {
-			if (first) {
-				first = false;
-			} else {
+		Iterator<Object> it = elements.iterator();
+		while (it.hasNext()) {
+			sb.append(it.next());
+			if (it.hasNext()) {
 				sb.append(conjunction);
 			}
-			sb.append(item);
 		}
 		return sb.toString();
+	}
+
+	public static String toString(Object[] arguments, String conjunction) {
+		return toString(Arrays.asList(arguments), conjunction);
 	}
 
 	public static boolean isBlank(String value) {

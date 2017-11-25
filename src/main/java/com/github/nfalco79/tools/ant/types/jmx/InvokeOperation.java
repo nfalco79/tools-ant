@@ -17,6 +17,7 @@ package com.github.nfalco79.tools.ant.types.jmx;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 
 import org.apache.tools.ant.BuildException;
 
@@ -42,6 +43,15 @@ public class InvokeOperation extends AbstractMBeanType {
 			this.mBeanRefId = mBeanRefId;
 		}
 
+		@Override
+		public String toString() {
+			if (value != null) {
+				return value;
+			} else if (mBeanRefId != null) {
+				return "ref:" + mBeanRefId;
+			}
+			return "null";
+		}
 	}
 
 	private String operation;
@@ -80,5 +90,31 @@ public class InvokeOperation extends AbstractMBeanType {
 				throw new BuildException("parameter value is a required attribute for JMX invoke operation. To pass null value use \"null\" string.");
 			}
 		}
+	}
+
+	@Override
+	public String toString() {
+		return toString(true);
+	}
+
+	public String toString(boolean showParameters) {
+		StringBuilder sb = new StringBuilder();
+		sb.append("JMX operation ") //
+				.append(getDomain()) //
+				.append('.') //
+				.append(operation);
+
+		if (showParameters) {
+			sb.append('(');
+			Iterator<Parameter> pIt = parameters.iterator();
+			while (pIt.hasNext()) {
+				sb.append(pIt.next().toString());
+				if (pIt.hasNext()) {
+					sb.append(',');
+				}
+			}
+			sb.append(')');
+		}
+		return sb.toString();
 	}
 }
