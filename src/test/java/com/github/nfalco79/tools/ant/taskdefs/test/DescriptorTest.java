@@ -36,6 +36,7 @@ import com.github.nfalco79.tools.ant.taskdefs.ESA;
 import com.github.nfalco79.tools.ant.taskdefs.FreePort;
 import com.github.nfalco79.tools.ant.taskdefs.ManifestReader;
 import com.github.nfalco79.tools.ant.taskdefs.jmx.JMXTask;
+import com.github.nfalco79.tools.ant.types.jmx.ExistMBean;
 import com.github.nfalco79.tools.ant.types.jmx.GetAttribute;
 import com.github.nfalco79.tools.ant.types.jmx.InvokeOperation;
 
@@ -50,6 +51,7 @@ public class DescriptorTest {
 		tasks.put("eba", EBA.class);
 		tasks.put("invokeOperation", InvokeOperation.class);
 		tasks.put("getAttribute", GetAttribute.class);
+		tasks.put("existMBean", ExistMBean.class);
 		tasks.put("jmx", JMXTask.class);
 	}
 

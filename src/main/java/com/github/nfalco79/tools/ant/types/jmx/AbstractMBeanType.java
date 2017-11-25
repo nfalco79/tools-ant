@@ -86,4 +86,14 @@ public abstract class AbstractMBeanType extends DataType {
 		}
 	}
 
+	@Override
+	public String toString() {
+		return new StringBuilder() //
+				.append("JMX operation ") //
+				.append(super.toString()) //
+				.append(domain) //
+				.append('.').append(beanName) //
+				.append(':').append(fields).toString();
+	}
+
 }

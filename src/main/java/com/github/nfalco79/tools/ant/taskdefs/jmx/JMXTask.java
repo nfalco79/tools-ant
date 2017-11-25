@@ -31,6 +31,7 @@ import org.apache.tools.ant.Task;
 import org.apache.tools.ant.taskdefs.condition.Condition;
 
 import com.github.nfalco79.tools.ant.types.jmx.AbstractMBeanType;
+import com.github.nfalco79.tools.ant.types.jmx.ExistMBean;
 import com.github.nfalco79.tools.ant.types.jmx.GetAttribute;
 import com.github.nfalco79.tools.ant.types.jmx.InvokeOperation;
 import com.github.nfalco79.tools.ant.types.jmx.InvokeOperation.Parameter;
@@ -86,6 +87,7 @@ public class JMXTask extends Task implements Condition {
 			setupClient();
 
 			log(operations.size() + " JMX operation to perform");
+			int i = 0;
 			for (AbstractMBeanType op : operations) {
 				execute(op);
 			}
@@ -108,7 +110,10 @@ public class JMXTask extends Task implements Condition {
 
 		while (beansIterator.hasNext()) {
 			final ObjectName bean = beansIterator.next();
-			if (accept(op.getDomainAttributes(), bean)) {
+			boolean matches = matches(op.getDomainAttributes(), bean);
+			if (op instanceof ExistMBean) {
+				op.setValue(matches);
+			} else if (matches) {
 				if (op instanceof InvokeOperation) {
 					invokeOperation(bean, (InvokeOperation) op);
 				} else if (op instanceof GetAttribute) {
@@ -121,7 +126,7 @@ public class JMXTask extends Task implements Condition {
 		return op.getValue();
 	}
 
-	private boolean accept(Map<String, String> properties, final ObjectName bean) {
+	private boolean matches(Map<String, String> properties, final ObjectName bean) {
 		for (Entry<String, String> property : properties.entrySet()) {
 			if (!property.getValue().equals(bean.getKeyProperty(property.getKey()))) {
 				return false;
@@ -136,6 +141,7 @@ public class JMXTask extends Task implements Condition {
 		}
 
 		op.setValue(client.getAttribute(bean, op.getAttribute()));
+		log(op.toString(), Project.MSG_DEBUG);
 	}
 
 	private void invokeOperation(final ObjectName bean, InvokeOperation op) throws Exception {
@@ -161,6 +167,7 @@ public class JMXTask extends Task implements Condition {
 				arguments[i++] = value;
 			}
 		}
+
 		log(op.toString(), Project.MSG_DEBUG);
 		op.setValue(client.invokeOperation(bean, op.getOperation(), arguments));
 	}
@@ -189,7 +196,7 @@ public class JMXTask extends Task implements Condition {
 			} else if (result instanceof String) {
 				return Boolean.valueOf((String) result);
 			} else {
-				throw new BuildException("the result of operation " + op.toString() + " is not a boolean");
+				throw new BuildException("the result of " + op.toString() + " is not a boolean");
 			}
 		} catch (Exception e) {
 			throw new BuildException(e.getMessage(), e);

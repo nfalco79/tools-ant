@@ -99,9 +99,8 @@ public class InvokeOperation extends AbstractMBeanType {
 
 	public String toString(boolean showParameters) {
 		StringBuilder sb = new StringBuilder();
-		sb.append("JMX operation ") //
-				.append(getDomain()) //
-				.append('.') //
+		sb.append(super.toString()) //
+				.append('[') //
 				.append(operation);
 
 		if (showParameters) {
@@ -114,7 +113,10 @@ public class InvokeOperation extends AbstractMBeanType {
 				}
 			}
 			sb.append(')');
+		} else {
+			sb.append("(..)");
 		}
+		sb.append(']');
 		return sb.toString();
 	}
 }

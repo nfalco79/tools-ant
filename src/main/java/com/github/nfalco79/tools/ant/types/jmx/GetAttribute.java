@@ -37,4 +37,13 @@ public class GetAttribute extends AbstractMBeanType {
 			throw new BuildException("attribute is required for JMX getAttribute");
 		}
 	}
+
+	@Override
+	public String toString() {
+		return new StringBuilder() //
+				.append(super.toString()) //
+				.append('[').append(attribute).append(']') //
+				.append('=').append(getValue().toString()) //
+				.toString();
+	}
 }
