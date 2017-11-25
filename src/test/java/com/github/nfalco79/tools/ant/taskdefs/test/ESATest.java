@@ -1,9 +1,6 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
+ * Copyright 2017 Nikolas Falco
+ * Licensed under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
@@ -19,7 +16,7 @@
 package com.github.nfalco79.tools.ant.taskdefs.test;
 
 import static org.junit.Assert.*;
-import static org.ops4j.pax.tinybundles.core.TinyBundles.bundle;
+import static org.ops4j.pax.tinybundles.core.TinyBundles.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,13 +44,13 @@ public class ESATest {
 
 	private File createBundles() throws IOException {
 		InputStream is = bundle() //
-		.add(ESA.class) //
-		.add(ESATest.class) //
-		.set(Constants.BUNDLE_MANIFESTVERSION, "2") //
-		.set(Constants.BUNDLE_VERSION, BUNDLE_VERSION) //
-		.set(Constants.BUNDLE_SYMBOLICNAME, BUNDLE_SYMBOLICNAME) //
-		.set(Constants.EXPORT_PACKAGE, ESA.class.getPackage().getName()) //
-		.build();
+				.add(ESA.class) //
+				.add(ESATest.class) //
+				.set(Constants.BUNDLE_MANIFESTVERSION, "2") //
+				.set(Constants.BUNDLE_VERSION, BUNDLE_VERSION) //
+				.set(Constants.BUNDLE_SYMBOLICNAME, BUNDLE_SYMBOLICNAME) //
+				.set(Constants.EXPORT_PACKAGE, ESA.class.getPackage().getName()) //
+				.build();
 
 		File bundleFile = File.createTempFile("bundle", ".jar");
 		FileUtils.copyInputStreamToFile(is, bundleFile);

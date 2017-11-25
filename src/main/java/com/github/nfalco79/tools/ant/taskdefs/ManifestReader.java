@@ -1,9 +1,6 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
+ * Copyright 2017 Nikolas Falco
+ * Licensed under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
@@ -331,8 +328,7 @@ public class ManifestReader extends Task {
 		@SuppressWarnings("rawtypes")
 		Enumeration sectionNames = main.getSectionNames();
 		while (sectionNames.hasMoreElements()) {
-			org.apache.tools.ant.taskdefs.Manifest.Section readSection = main
-					.getSection((String) sectionNames.nextElement());
+			org.apache.tools.ant.taskdefs.Manifest.Section readSection = main.getSection((String) sectionNames.nextElement());
 			Section section = new Section(readSection.getName());
 			copyAttributes(readSection, section);
 			addConfiguredSection(section);
@@ -344,8 +340,7 @@ public class ManifestReader extends Task {
 		Enumeration attributeKeys = sourceSection.getAttributeKeys();
 
 		while (attributeKeys.hasMoreElements()) {
-			org.apache.tools.ant.taskdefs.Manifest.Attribute readAttribute = sourceSection
-					.getAttribute((String) attributeKeys.nextElement());
+			org.apache.tools.ant.taskdefs.Manifest.Attribute readAttribute = sourceSection.getAttribute((String) attributeKeys.nextElement());
 			Attribute attribute = new Attribute(readAttribute.getName());
 			destSection.addConfiguredAttribute(attribute);
 		}

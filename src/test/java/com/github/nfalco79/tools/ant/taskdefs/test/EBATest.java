@@ -1,9 +1,6 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
+ * Copyright 2017 Nikolas Falco
+ * Licensed under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
@@ -19,7 +16,7 @@
 package com.github.nfalco79.tools.ant.taskdefs.test;
 
 import static org.junit.Assert.*;
-import static org.ops4j.pax.tinybundles.core.TinyBundles.bundle;
+import static org.ops4j.pax.tinybundles.core.TinyBundles.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,14 +45,7 @@ public class EBATest {
 	private static final String WAB_VERSION = "2.0.0";
 
 	private File createBundle() throws IOException {
-		InputStream is = bundle()
-				.add(EBA.class)
-				.add(EBATest.class)
-				.set(Constants.BUNDLE_MANIFESTVERSION, "2")
-				.set(Constants.BUNDLE_VERSION, BUNDLE_VERSION)
-				.set(Constants.BUNDLE_SYMBOLICNAME, BUNDLE_SYMBOLICNAME)
-				.set(Constants.EXPORT_PACKAGE, EBA.class.getPackage().getName())
-				.build();
+		InputStream is = bundle().add(EBA.class).add(EBATest.class).set(Constants.BUNDLE_MANIFESTVERSION, "2").set(Constants.BUNDLE_VERSION, BUNDLE_VERSION).set(Constants.BUNDLE_SYMBOLICNAME, BUNDLE_SYMBOLICNAME).set(Constants.EXPORT_PACKAGE, EBA.class.getPackage().getName()).build();
 
 		File bundleFile = File.createTempFile("bundle", ".jar");
 		bundleFile.deleteOnExit();
@@ -65,15 +55,7 @@ public class EBATest {
 	}
 
 	private File createWebBundle() throws IOException {
-		InputStream is = bundle()
-				.add(EBA.class)
-				.add(EBATest.class)
-				.set(Constants.BUNDLE_MANIFESTVERSION, "2")
-				.set(Constants.BUNDLE_VERSION, WAB_VERSION)
-				.set(Constants.BUNDLE_SYMBOLICNAME, WAB_SYMBOLICNAME)
-				.set(Constants.EXPORT_PACKAGE, EBA.class.getPackage().getName())
-				.set("Web-ContextPath", "/test")
-				.build();
+		InputStream is = bundle().add(EBA.class).add(EBATest.class).set(Constants.BUNDLE_MANIFESTVERSION, "2").set(Constants.BUNDLE_VERSION, WAB_VERSION).set(Constants.BUNDLE_SYMBOLICNAME, WAB_SYMBOLICNAME).set(Constants.EXPORT_PACKAGE, EBA.class.getPackage().getName()).set("Web-ContextPath", "/test").build();
 
 		File bundleFile = File.createTempFile("bundle-web", ".jar");
 		bundleFile.deleteOnExit();

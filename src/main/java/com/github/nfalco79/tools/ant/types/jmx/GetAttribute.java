@@ -1,9 +1,6 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
+ * Copyright 2017 Nikolas Falco
+ * Licensed under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
@@ -18,6 +15,8 @@
  */
 package com.github.nfalco79.tools.ant.types.jmx;
 
+import org.apache.tools.ant.BuildException;
+
 public class GetAttribute extends AbstractMBeanType {
 
 	private String attribute;
@@ -30,4 +29,12 @@ public class GetAttribute extends AbstractMBeanType {
 		this.attribute = attribute;
 	}
 
+	@Override
+	public void validate() {
+		super.validate();
+
+		if (getAttribute() == null) {
+			throw new BuildException("attribute is required for JMX getAttribute");
+		}
+	}
 }

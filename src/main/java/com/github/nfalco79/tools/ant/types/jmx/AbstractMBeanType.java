@@ -1,9 +1,6 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
+ * Copyright 2017 Nikolas Falco
+ * Licensed under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
@@ -23,6 +20,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.StringTokenizer;
 
+import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.types.DataType;
 
 public abstract class AbstractMBeanType extends DataType {
@@ -75,11 +73,17 @@ public abstract class AbstractMBeanType extends DataType {
 		while (pair.hasMoreTokens()) {
 			final StringTokenizer property = new StringTokenizer(pair.nextToken(), "=");
 
-			final String key = property.nextToken();
-			final String value = property.hasMoreTokens() ? property.nextToken() : null;
-			domainAttributes.put(key, value);
+			final String attrKey = property.nextToken();
+			final String attrValue = property.hasMoreTokens() ? property.nextToken() : null;
+			domainAttributes.put(attrKey, attrValue);
 		}
 		return domainAttributes;
+	}
+
+	public void validate() {
+		if (getDomain() == null) {
+			throw new BuildException("domain is required for any JMX operation");
+		}
 	}
 
 }

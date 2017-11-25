@@ -1,9 +1,6 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
+ * Copyright 2017 Nikolas Falco
+ * Licensed under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
@@ -74,12 +71,15 @@ public class JMXTask extends Task implements Condition {
 	}
 
 	@Override
-	public void execute() throws BuildException {
+	public void execute() {
 		if (url == null || "".equals(url.trim())) {
 			throw new BuildException("jmxURL is a required attribute");
 		}
 		if (operations == null || operations.isEmpty()) {
 			throw new BuildException("at least an operation is a required");
+		}
+		for (AbstractMBeanType operation : operations) {
+			operation.validate();
 		}
 
 		try {
@@ -98,7 +98,7 @@ public class JMXTask extends Task implements Condition {
 		}
 	}
 
-	private Object execute(AbstractMBeanType op) throws JMException, Exception {
+	private Object execute(AbstractMBeanType op) throws Exception {
 		final Set<ObjectName> beans = client.getBeanNames(op.getDomain());
 		final Iterator<ObjectName> beansIterator = beans.iterator();
 
@@ -149,9 +149,16 @@ public class JMXTask extends Task implements Condition {
 		for (Parameter parameter : parameters) {
 			if (parameter.getmBeanRefId() != null) {
 				AbstractMBeanType mbean = (AbstractMBeanType) getProject().getReference(parameter.getmBeanRefId());
+				if (mbean == null) {
+					throw new BuildException("The referred MBean " + parameter.getmBeanRefId() + " does not exists");
+				}
 				arguments[i++] = mbean.getValue();
 			} else {
-				arguments[i++] = parameter.getValue();
+				String value = parameter.getValue();
+				if ("null".equals(value)) {
+					value = null;
+				}
+				arguments[i++] = value;
 			}
 		}
 		op.setValue(client.invokeOperation(bean, op.getOperation(), arguments));
@@ -162,7 +169,7 @@ public class JMXTask extends Task implements Condition {
 	}
 
 	@Override
-	public boolean eval() throws BuildException {
+	public boolean eval() {
 		if (url == null || "".equals(url.trim())) {
 			throw new BuildException("jmxURL is a required attribute");
 		}

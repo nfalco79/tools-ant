@@ -1,9 +1,6 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
+ * Copyright 2017 Nikolas Falco
+ * Licensed under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
@@ -152,8 +149,9 @@ public class ESA extends Zip {
 	}
 
 	@Override
-	protected ArchiveState getResourcesToAdd(ResourceCollection[] rcs, File zipFile, boolean needsUpdate)
-			throws BuildException {
+	protected ArchiveState getResourcesToAdd(	ResourceCollection[] rcs,
+												File zipFile,
+												boolean needsUpdate) throws BuildException {
 		for (ResourceCollection rc : rcs) {
 			for (@SuppressWarnings("unchecked")
 			Iterator<Resource> iterator = rc.iterator(); iterator.hasNext();) {
@@ -305,8 +303,7 @@ public class ESA extends Zip {
 					}
 				}
 				if (!exportPackages.isEmpty()) {
-					manifest.addConfiguredAttribute(
-							new Attribute(IBM_API_PACKAGE, StringUtils.join(exportPackages, ", ")));
+					manifest.addConfiguredAttribute(new Attribute(IBM_API_PACKAGE, StringUtils.join(exportPackages, ", ")));
 				}
 
 				Collection<String> content = new ArrayList<String>(bundles.size());
@@ -314,12 +311,10 @@ public class ESA extends Zip {
 					switch (BundleInfo.getType()) {
 					case bundle:
 						BundleInfo bundleInfo = BundleInfo;
-						content.add(MessageFormat.format("{0};version=\"{1}\"", bundleInfo.getName(),
-								bundleInfo.getVersion()));
+						content.add(MessageFormat.format("{0};version=\"{1}\"", bundleInfo.getName(), bundleInfo.getVersion()));
 						break;
 					default:
-						content.add(MessageFormat.format("{0};type=\"{1}\"", BundleInfo.getName(),
-								BundleInfo.getType().name()));
+						content.add(MessageFormat.format("{0};type=\"{1}\"", BundleInfo.getName(), BundleInfo.getType().name()));
 						break;
 					}
 				}
