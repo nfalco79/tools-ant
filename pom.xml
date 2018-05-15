@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.github.nfalco79</groupId>
 	<artifactId>tools-ant</artifactId>
-	<version>1.1.0</version>
+	<version>1.1.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<name>Ant Tools</name>
 	<description>A collection of Ant tools to get easy scripting with ant language.</description>
@@ -23,7 +23,7 @@
 		<url>https://github.com/nfalco79/tools</url>
 		<connection>scm:git:git@github.com:nfalco79/tools.git</connection>
 		<developerConnection>scm:git:git@github.com:nfalco79/tools.git</developerConnection>
-		<tag>tools-ant-1.1.0</tag>
+		<tag>HEAD</tag>
 	</scm>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
