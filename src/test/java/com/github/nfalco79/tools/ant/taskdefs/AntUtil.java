@@ -13,7 +13,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.github.nfalco79.tools.ant.taskdefs.test;
+package com.github.nfalco79.tools.ant.taskdefs;
 
 import java.io.File;
 
@@ -22,7 +22,7 @@ import org.apache.tools.ant.DefaultLogger;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.ProjectHelper;
 
-/* package */final class AntUtil {
+public final class AntUtil {
 
 	/**
 	 * To execute the specified target in the Ant build.xml file.

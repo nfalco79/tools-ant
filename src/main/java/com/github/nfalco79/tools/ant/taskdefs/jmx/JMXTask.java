@@ -87,7 +87,6 @@ public class JMXTask extends Task implements Condition {
 			setupClient();
 
 			log(operations.size() + " JMX operation to perform");
-			int i = 0;
 			for (AbstractMBeanType op : operations) {
 				execute(op);
 			}
@@ -100,31 +99,32 @@ public class JMXTask extends Task implements Condition {
 		}
 	}
 
-	private Object execute(AbstractMBeanType op) throws Exception {
-		final Set<ObjectName> beans = client.getBeanNames(op.getDomain());
-		final Iterator<ObjectName> beansIterator = beans.iterator();
+    private Object execute(AbstractMBeanType op) throws Exception {
+        final Set<ObjectName> beans = client.getBeanNames(op.getDomain());
+        final Iterator<ObjectName> beansIterator = beans.iterator();
 
-		if (!beansIterator.hasNext()) {
-			throw new BuildException("Domain " + op.getDomain() + " not found for " + op.toString());
-		}
+        if (!beansIterator.hasNext()) {
+            throw new BuildException("Domain " + op.getDomain() + " not found for " + op.toString());
+        }
 
-		while (beansIterator.hasNext()) {
-			final ObjectName bean = beansIterator.next();
-			boolean matches = matches(op.getDomainAttributes(), bean);
-			if (op instanceof ExistMBean) {
-				op.setValue(matches);
-			} else if (matches) {
-				if (op instanceof InvokeOperation) {
-					invokeOperation(bean, (InvokeOperation) op);
-				} else if (op instanceof GetAttribute) {
-					getAttribute(bean, (GetAttribute) op);
-				} else {
-					throw new IllegalArgumentException("operation not supported");
-				}
-			}
-		}
-		return op.getValue();
-	}
+        while (beansIterator.hasNext()) {
+            final ObjectName bean = beansIterator.next();
+            boolean matches = matches(op.getDomainAttributes(), bean);
+            if (matches) {
+                if (op instanceof ExistMBean) {
+                    op.setValue(true);
+                    break;
+                } else if (op instanceof InvokeOperation) {
+                    invokeOperation(bean, (InvokeOperation) op);
+                } else if (op instanceof GetAttribute) {
+                    getAttribute(bean, (GetAttribute) op);
+                } else {
+                    throw new IllegalArgumentException("operation not supported");
+                }
+            }
+        }
+        return op.getValue();
+    }
 
 	private boolean matches(Map<String, String> properties, final ObjectName bean) {
 		for (Entry<String, String> property : properties.entrySet()) {
@@ -207,7 +207,7 @@ public class JMXTask extends Task implements Condition {
 		}
 	}
 
-	private void setupClient() {
+	void setupClient() {
 		log("setup jmx client", Project.MSG_DEBUG);
 
 		try {

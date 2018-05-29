@@ -13,7 +13,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.github.nfalco79.tools.ant.taskdefs.test;
+package com.github.nfalco79.tools.ant.taskdefs;
 
 import static org.junit.Assert.*;
 import static org.ops4j.pax.tinybundles.core.TinyBundles.*;
