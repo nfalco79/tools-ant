@@ -15,7 +15,9 @@
  */
 package com.github.nfalco79.tools.ant.taskdefs;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.InputStream;
 import java.net.URL;
@@ -31,10 +33,6 @@ import org.jdom2.Element;
 import org.jdom2.input.SAXBuilder;
 import org.junit.Test;
 
-import com.github.nfalco79.tools.ant.taskdefs.EBA;
-import com.github.nfalco79.tools.ant.taskdefs.ESA;
-import com.github.nfalco79.tools.ant.taskdefs.FreePort;
-import com.github.nfalco79.tools.ant.taskdefs.ManifestReader;
 import com.github.nfalco79.tools.ant.taskdefs.jmx.JMXTask;
 import com.github.nfalco79.tools.ant.types.jmx.ExistMBean;
 import com.github.nfalco79.tools.ant.types.jmx.GetAttribute;

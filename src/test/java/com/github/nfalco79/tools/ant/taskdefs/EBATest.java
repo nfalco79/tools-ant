@@ -15,8 +15,10 @@
  */
 package com.github.nfalco79.tools.ant.taskdefs;
 
-import static org.junit.Assert.*;
-import static org.ops4j.pax.tinybundles.core.TinyBundles.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.ops4j.pax.tinybundles.core.TinyBundles.bundle;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,9 +33,6 @@ import org.apache.tools.ant.taskdefs.Manifest;
 import org.apache.tools.ant.taskdefs.Manifest.Attribute;
 import org.apache.tools.ant.types.FileSet;
 import org.junit.Test;
-
-import com.github.nfalco79.tools.ant.taskdefs.ApplicationConstants;
-import com.github.nfalco79.tools.ant.taskdefs.EBA;
 
 import aQute.bnd.osgi.Constants;
 
